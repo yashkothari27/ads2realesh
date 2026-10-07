@@ -8,7 +8,7 @@
 <meta name="description" content="Book classified and display ads in 1 newspapers published in Indore. Compare rates and book online.">
 <link rel="canonical" href="https://www.ads2realesh.com/newspaper/city/indore/index.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Noto+Sans+Devanagari:wght@800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Telugu:wght@800&family=Noto+Sans+Malayalam:wght@800&family=DM+Serif+Display&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Noto+Sans+Devanagari:wght@400;600;800&family=Noto+Sans+Gujarati:wght@400;600;800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Telugu:wght@800&family=Noto+Sans+Malayalam:wght@800&family=DM+Serif+Display&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../../styles.css">
 </head>
 <body>
@@ -71,6 +71,7 @@
   <a href="mailto:book@ads2realesh.com"><svg class="i"><use href="#i-mail"/></svg>book@ads2realesh.com</a>
   <a href="#" data-open="track">Track booking</a>
   <a href="../../../my/sign-in.html">Sign in</a>
+  <label class="sr" for="langSel">Language</label><select id="langSel"><option value="en">English</option><option value="hi">हिन्दी</option><option value="gu">ગુજરાતી</option></select>
  </span>
 </div></div>
 
@@ -109,7 +110,7 @@
   <div><h4>Categories</h4><div id="fCats"></div></div>
   <div><h4>Newspapers</h4><div id="fPapers"></div></div>
   <div><h4>Ad types</h4><a href="../../../index.html#types">Classified text</a><a href="../../../index.html#types">Classified display</a><a href="../../../index.html#types">Display ad</a><a href="../../../index.html#rates">Rates</a><a href="../../../index.html#notices">Legal notices</a></div>
-  <div><h4>Company</h4><a href="#">About us</a><a href="#how">How to book</a><a href="../../../index.html#faq">FAQ</a><a href="#">Contact</a><a href="#">Privacy policy</a><a href="#">Refund policy</a><a href="#">Terms and conditions</a></div>
+  <div><h4>Company</h4><a href="#">About us</a><a href="#how">How to book</a><a href="../../../index.html#faq">FAQ</a><a href="#">Contact</a><a href="#">Agency program</a><a href="../../../sitemap.xml">Sitemap</a><a href="#">Privacy policy</a><a href="#">Refund policy</a><a href="#">Terms and conditions</a></div>
  </div>
  <div class="base"><span>© <span id="yr"></span> ads2realesh. All rights reserved. GSTIN: to be added</span><span>Payments secured by Razorpay</span></div>
 </div></footer>
@@ -131,7 +132,7 @@
 
 <dialog id="track" class="small-dlg" aria-labelledby="trT">
  <h3 id="trT">Track your booking</h3>
- <form id="trForm"><label class="f" for="trId">Booking ID</label><input id="trId" placeholder="e.g. A2R-48213" required><p class="err" id="trErr"></p>
+ <form id="trForm"><label class="f" for="trId">Ad ID</label><input id="trId" placeholder="e.g. A2R-48213" required autocomplete="off"><label class="f" for="trEmail">Email used while booking</label><input id="trEmail" type="email" required autocomplete="email"><p class="err" id="trErr"></p>
  <div id="trOut"></div>
  <div style="display:flex;gap:8px;justify-content:end;margin-top:12px"><button type="button" class="btn" data-close>Close</button><button class="btn primary">Track</button></div></form>
 </dialog>
@@ -139,5 +140,7 @@
 
 <script src="../../../pricing.js"></script>
 <script src="../../../app.js"></script>
+<script src="../../../i18n-text.js"></script>
+<script src="../../../i18n.js"></script>
 </body>
 </html>

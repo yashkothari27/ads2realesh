@@ -159,27 +159,33 @@ page("newspaper-display-booking.html", {
 
 /* ---- sign in ---- */
 page("my/sign-in.html", {
-  title: "Sign In | ads2realesh",
-  desc: "Sign in with your mobile number to see your newspaper ad bookings and invoices.",
-  body: `<section><div class="wrap auth">
- <div class="box">
-  <h1 style="font:700 32px Outfit;margin:0 0 6px">Sign in</h1>
-  <p class="muted" id="siNote">Use your mobile number to see your bookings and invoices.</p>
-  <form id="siForm" novalidate>
-   <label class="f" for="siPhone">Mobile number</label><input id="siPhone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10-digit mobile">
-   <div id="siOtpWrap" hidden><label class="f" for="siOtp">6-digit code</label><input id="siOtp" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
-   <p class="err" id="siErr" role="alert"></p>
-   <button class="btn primary" id="siBtn" style="width:100%">Send code</button>
-  </form>
-  <div id="siOut" hidden><h2 style="font:700 22px Outfit">My bookings</h2><div class="plist" id="siList" style="grid-template-columns:1fr"></div></div>
+  title: "Manage Your Booking | ads2realesh",
+  desc: "Find your newspaper ad booking with its ID, or get a sign-in code by email. Check status, download invoices and manage dates.",
+  body: `<section class="phero"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a> / <span aria-current="page">My bookings</span></nav>
+ <h1>Manage your booking</h1><p class="lead muted">No password needed. Find a single booking with its ID, or get a code by email to see all your orders.</p></div></section>
+<section><div class="wrap split" style="align-items:start">
+ <div class="grid2" style="grid-template-columns:1fr 1fr;align-items:start">
+  <form class="box" id="lookForm" novalidate><h2 style="font:700 22px Outfit;margin:0 0 4px">Find my booking</h2><p class="muted sm">Use the Ad ID from your confirmation SMS, WhatsApp or email.</p>
+   <label class="f" for="siId">Ad ID</label><input id="siId" placeholder="e.g. A2R-48213" autocomplete="off" style="text-transform:uppercase">
+   <label class="f" for="siEmail">Email used while booking</label><input id="siEmail" type="email" autocomplete="email">
+   <p class="err" id="lookErr" role="alert"></p><button class="btn primary" style="width:100%">Find my booking</button></form>
+  <form class="box" id="codeForm" novalidate><h2 style="font:700 22px Outfit;margin:0 0 4px">Email me a code</h2><p class="muted sm" id="codeNote">See every booking on your email. The code expires in 10 minutes.</p>
+   <label class="f" for="cdEmail">Email address</label><input id="cdEmail" type="email" autocomplete="email">
+   <div id="cdWrap" hidden><label class="f" for="cdCode">6-digit code</label><input id="cdCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+   <p class="err" id="codeErr" role="alert"></p><button class="btn primary" id="cdBtn" style="width:100%">Send me a code</button></form>
  </div>
- <p class="muted sm" style="text-align:center;margin-top:16px">No account needed to book. Sign-in only shows past orders.</p>
-</div></section>`,
+ <div class="fl">
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-shield"/></svg></span><div><strong>No password</strong><p>A one-time code or your Ad ID is all you need.</p></div></div>
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-layers"/></svg></span><div><strong>All bookings in one place</strong><p>Status, invoices and proof of publication for every order.</p></div></div>
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-phone"/></svg></span><div><strong>Help on WhatsApp</strong><p>Message us from 10 am to 7 pm. <a href="https://wa.me/919000000000"><b>Open WhatsApp</b></a></p></div></div>
+ </div>
+</div></section>
+<section id="siOut" hidden style="background:var(--soft)"><div class="wrap"><div class="head"><div><h2>Your bookings</h2><p class="muted" id="siWho" style="margin:0"></p></div><a class="btn" href="index.html" data-book>Book another ad</a></div><div id="siList" class="fl"></div></div></section>`,
 });
 
 const GUIDE = {
   _: ["Keep it short and clear: what, where, price and a contact number.", "Book before the cutoff, usually 5 pm the day before.", "Check names, numbers and dates on the proof before you approve it.", "Weekend editions are read more widely but close earlier."],
-  "Matrimonial": ["Sunday is the main matrimonial day in most papers, so book by Thursday or Friday.", "Photos are allowed only in boxed (classified display) ads.", "Include age, profession, community preference if any, and a contact.", "Ads are published under the paper's matrimonial headings, such as Brides Wanted or Grooms Wanted."],
+  "Matrimonial": ["Sunday is the main matrimonial day in most papers, so book by Thursday or Friday.", "Photos are allowed only in boxed (classified display) ads.", "Include age, profession, community preference if any, and a contact.", "Ads are published under the paper's matrimonial headings, such as Brides Wanted or Grooms Wanted.", "Mention your community or preference so the ad is placed under the right community heading."],
   "Name change": ["Most papers need a copy of your affidavit or gazette notification.", "Publish in one English and one regional paper if your purpose (passport, gazette) asks for it.", "Write old and new names exactly as in your affidavit.", "Keep the clipping: you will need it for official records."],
   "Property": ["State locality, size, price and whether it is for rent or sale.", "Sunday property pages get the most readers.", "Avoid exact flat numbers for safety. A phone number is enough.", "Boxed ads with a photo work well for larger properties."],
   "Recruitment": ["Mention the role, experience needed, location and how to apply.", "Walk-in ads should give the date, time and full address.", "Recruitment is charged at a higher rate in most papers.", "Boxed ads with your logo are easier to spot on busy job pages."],
@@ -211,6 +217,11 @@ for (const city of CITIES) {
       body: hero([["Home", "index.html"], [city, `newspaper/city/${cs}/index.html`], [cat]], `${esc(cat)} ads in ${esc(city)} newspapers`,
         `Book a ${esc(lc)} ad in any of ${rows.length} papers with a ${esc(city)} edition. We write it, translate it and email you the published clipping.`,
         `<button class="btn primary" data-cat="${esc(cat)}" data-city="${esc(city)}">Book a ${esc(lc)} ad</button><a class="btn" href="#ccRates">Compare rates</a>`)
+        + `<section style="padding:28px 0;border-bottom:1px solid var(--line)"><div class="wrap grid4" style="grid-template-columns:repeat(4,1fr)">
+ <div><b style="font:700 18px Outfit">We write it</b><p class="muted sm" style="margin:2px 0 0">Free drafting for your ${esc(lc)} ad.</p></div>
+ <div><b style="font:700 18px Outfit">We translate it</b><p class="muted sm" style="margin:2px 0 0">Into the paper's own language.</p></div>
+ <div><b style="font:700 18px Outfit">We prove it ran</b><p class="muted sm" style="margin:2px 0 0">E-paper clipping on every date.</p></div>
+ <div><b style="font:700 18px Outfit">Book by 5 pm</b><p class="muted sm" style="margin:2px 0 0">Most editions run it tomorrow.</p></div></div></section>`
         + `<section id="ccRates"><div class="wrap">
  <div class="head"><div><h2>${esc(cat)} ad rates in ${esc(city)}</h2><p class="muted" style="margin:0">Prices for a 25-word text ad per insertion, before GST.${CAT_MULT[cat] ? " This category is charged at a special rate." : ""}</p></div>
   <div class="seg" role="group" aria-label="Sort newspapers"><button class="segb" aria-pressed="true" data-sort="price">Lowest price</button><button class="segb" aria-pressed="false" data-sort="reach">English first</button></div></div>
@@ -224,9 +235,9 @@ for (const city of CITIES) {
   <li><svg class="i"><use href="#i-check"/></svg><span><b>Extras</b> such as bold, a tick mark, background colour or a border add a percentage.</span></li>
   <li><svg class="i"><use href="#i-check"/></svg><span><b>GST at 5%</b> is added. The total is shown before you pay.</span></li></ul></div>
  <div><h2>Offers</h2><div class="fl" style="margin-top:16px">
-  <div class="fi"><span class="ico"><svg class="i"><use href="#i-layers"/></svg></span><div><strong>Several papers, one order</strong><p>Run in an English and a regional paper together and pay once.</p></div></div>
-  <div class="fi"><span class="ico"><svg class="i"><use href="#i-clock"/></svg></span><div><strong>Repeat dates</strong><p>Some papers offer a lower rate when the same ad runs on several dates. Ask us when you book.</p></div></div>
-  <div class="fi"><span class="ico"><svg class="i"><use href="#i-pen"/></svg></span><div><strong>Free writing and translation</strong><p>Our desk drafts your ad in the paper's language at no charge.</p></div></div></div></div>
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-tag"/></svg></span><div><strong>Bulk booking <span class="off">SAVE MORE</span></strong><p>Booking ten or more insertions together? Ask for the volume rate and we pass on the paper's bulk discount.</p></div></div>
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-layers"/></svg></span><div><strong>English + regional combo <span class="off">12% OFF</span></strong><p>Run the same ad in an English and a regional ${esc(city)} paper in one order and pay once.</p></div></div>
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-clock"/></svg></span><div><strong>Sunday + weekday <span class="off">PACKAGE</span></strong><p>Pair a Sunday insertion with a weekday one for a lower combined rate. Pick both dates in the booking form.</p></div></div></div></div>
 </div></section>`
         + `<section><div class="wrap split">
  <div><h2>Before you book a ${esc(lc)} ad</h2><ul class="ticks" style="margin-top:16px">${g.map(t => `<li><svg class="i"><use href="#i-check"/></svg><span>${t}</span></li>`).join("")}</ul></div>

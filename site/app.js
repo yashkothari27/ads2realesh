@@ -26,7 +26,9 @@ let lang = "All";
 function renderPapers(){
  const list = P.filter(p=>lang==="All"||p.lang===lang);
  $("#langs").innerHTML = ["All",...LANGS].map(l=>`<button class="chip" aria-pressed="${l===lang}" data-lang="${l}">${l}</button>`).join("");
- $("#plist").innerHTML = list.map(p=>`<div class="pitem"><div><strong>${esc(p.name)}</strong><small>${p.lang} · ${p.cities.length} editions · from ${inr(p.word)}/word</small></div><button class="btn sm" data-paper="${esc(p.name)}">Book</button></div>`).join("");
+ const card=p=>`<div class="pitem"><div><strong>${esc(p.name)}</strong><small>${p.lang} · ${p.cities.length} editions · from ${inr(p.word)}/word</small></div><button class="btn sm" data-paper="${esc(p.name)}">Book</button></div>`;
+ if (lang!=="All") $("#plist").innerHTML = list.map(card).join("");
+ else $("#plist").innerHTML = LANGS.filter(l=>list.some(p=>p.lang===l)).map(l=>`<h3 class="pgrp">${l==="English"?"English dailies":l+" papers"}</h3>`+list.filter(p=>p.lang===l).map(card).join("")).join("");
  $("#pcount").textContent = `${P.length} newspapers in ${LANGS.length} languages (sample list)`;
 }
 renderPapers();
@@ -316,10 +318,11 @@ async function pay(){
 }
 function localDemo(){
  const id = "A2R-" + String(Math.floor(10000+Math.random()*89999)), all = store.get("a2r_bookings",{});
- all[id] = {items:S.items,dates:S.dates,total:quoteAll(S).total,status:"DEMO"}; store.set("a2r_bookings",all); return id;
+ all[id] = {items:S.items,dates:S.dates,total:quoteAll(S).total,status:"DEMO",email:S.email}; store.set("a2r_bookings",all); return id;
 }
 function finishBooking(id){
  S.id=id; try{localStorage.removeItem("a2r_draft")}catch{}
+ { const all=store.get("a2r_bookings",{}), q=quoteAll(S); all[id]={items:S.items,dates:S.dates,total:q.total,status:"PAID",email:S.email}; store.set("a2r_bookings",all); }
  step=5; render(); history.replaceState(null,"","#book/confirmed");
 }
 function closeWizard(){ $("#wiz").close(); }
@@ -363,12 +366,10 @@ if (location.hash.startsWith("#book")){
 }
 
 /* track + login */
-$("#trForm").addEventListener("submit",async e=>{ e.preventDefault(); const id=$("#trId").value.trim().toUpperCase();
- let b=null; try{ const r=await fetch("/api/booking/"+encodeURIComponent(id)); if(r.ok) b=await r.json(); }catch{}
- b = b || store.get("a2r_bookings",{})[id];
- const label={CREATED:"Awaiting payment",PAID:"Paid. Our desk is reviewing your ad.",DEMO:"Demo booking"};
- $("#trErr").textContent = b?"":"We couldn't find that booking ID. Check it, or call +91 90000 00000.";
- $("#trOut").innerHTML = b?`<div class="box" style="margin-top:8px"><strong>${esc(id)}</strong><p class="muted sm" style="margin:6px 0 0">${(b.items||[]).map(i=>esc(i.paper)+", "+esc(i.city)).join("; ")} · ${b.dates.map(fmt).join(", ")}<br>${inr(b.total)} · ${esc(label[b.status]||b.status)}</p></div>`:""; });
+$("#trForm").addEventListener("submit",async e=>{ e.preventDefault(); const id=$("#trId").value.trim().toUpperCase(), em=$("#trEmail").value.trim();
+ const b = await findBooking(id,em);
+ $("#trErr").textContent = b?"":"We couldn't find a booking with that ID and email. Check both, or call +91 90000 00000.";
+ $("#trOut").innerHTML = b?`<div class="box" style="margin-top:8px"><strong>${esc(id)}</strong><p class="muted sm" style="margin:6px 0 0">${(b.items||[]).map(i=>esc(i.paper)+", "+esc(i.city)).join("; ")} · ${(b.dates||[]).map(fmt).join(", ")}<br>${inr(b.total)} · ${esc(STATUS[b.status]||b.status)}</p></div>`:""; });
 
 /* ---------- display ad sizes (newspaper-display-booking.html) ---------- */
 const SIZES = [["Small strip","8 × 5 cm",8,5],["Quarter column","8 × 12 cm",8,12],["Eighth page","16 × 13 cm",16,13],["Quarter page","16 × 25 cm",16,25],["Half page","33 × 25 cm",33,25],["Full page","33 × 50 cm",33,50]];
@@ -383,21 +384,54 @@ if (document.getElementById("dsPaper")){
  fillDs(); drawDs();
 }
 
-/* ---------- sign in with mobile OTP (my/sign-in.html) ---------- */
-if (document.getElementById("siForm")){
- let sent=false;
- $("#siForm").addEventListener("submit",e=>{ e.preventDefault();
-  const ph=$("#siPhone").value.replace(/\D/g,""), err=$("#siErr");
-  if(!sent){ if(!/^[6-9]\d{9}$/.test(ph)){ err.textContent="Enter a valid 10-digit mobile number."; $("#siPhone").setAttribute("aria-invalid","true"); return; }
-   sent=true; err.textContent=""; $("#siPhone").removeAttribute("aria-invalid"); $("#siPhone").readOnly=true; $("#siOtpWrap").hidden=false; $("#siOtp").focus(); $("#siBtn").textContent="Verify and sign in";
-   $("#siNote").textContent=`We've sent a 6-digit code to +91 ${ph}.`; return; }
-  if(!/^\d{6}$/.test($("#siOtp").value)){ err.textContent="Enter the 6-digit code from the SMS."; $("#siOtp").setAttribute("aria-invalid","true"); return; }
-  // ponytail: OTP send/verify needs an SMS provider on server.js; until then this only shows bookings made in this browser
-  const all=store.get("a2r_bookings",{}), ids=Object.keys(all);
-  $("#siForm").hidden=true; $("#siOut").hidden=false;
-  $("#siList").innerHTML = ids.length ? ids.map(id=>{const b=all[id]; return `<div class="pitem"><div><strong>${esc(id)}</strong><small>${(b.items||[]).map(i=>esc(i.paper)+", "+esc(i.city)).join("; ")}</small><small>${b.dates.map(fmt).join(", ")}</small></div><b>${inr(b.total)}</b></div>`}).join("")
-   : `<div class="box" style="text-align:center"><h3>No bookings yet</h3><p class="muted">Your newspaper ads will appear here after you book.</p><button class="btn primary" data-book>Book an ad</button></div>`;
+/* ---------- manage booking (my/sign-in.html) ---------- */
+const STATUS={CREATED:"Awaiting payment",PAID:"Paid. Our desk is reviewing your ad.",DEMO:"Demo booking",PUBLISHED:"Published"};
+async function findBooking(id,email){
+ try{ const r=await fetch(`/api/booking/${encodeURIComponent(id)}?email=${encodeURIComponent(email)}`); if(r.ok) return {id,...(await r.json())}; }catch{}
+ const b=store.get("a2r_bookings",{})[id]; // browser-only copy (demo mode / static hosting)
+ return b && (!b.email || b.email.toLowerCase()===email.toLowerCase()) ? {id,...b} : null;
+}
+function invoiceWindow(b){
+ const w=window.open("","_blank"); if(!w) return alert("Allow pop-ups to download the invoice.");
+ const sub=b.total/1.05, gst=b.total-sub;
+ w.document.write(`<title>Invoice ${esc(b.id)}</title><body style="font:15px/1.5 system-ui;max-width:640px;margin:40px auto;color:#1c1917"><h1 style="margin:0">ads2realesh</h1><p>Tax invoice for booking <b>${esc(b.id)}</b></p><table style="width:100%;border-collapse:collapse"><tr><td style="padding:8px 0;border-bottom:1px solid #ddd">${(b.items||[]).map(i=>esc(i.paper)+", "+esc(i.city)).join("<br>")}<br><small>${b.dates.map(fmt).join(", ")}</small></td><td style="text-align:right;border-bottom:1px solid #ddd">${inr(sub)}</td></tr><tr><td style="padding:8px 0">GST 5%</td><td style="text-align:right">${inr(gst)}</td></tr><tr><td style="padding:8px 0"><b>Total</b></td><td style="text-align:right"><b>${inr(b.total)}</b></td></tr></table><p style="color:#666">Placeholder invoice. GSTIN and legal details are added before launch.</p><script>print()<\/script></body>`);
+ w.document.close();
+}
+function showBookings(list,who){
+ $("#siWho").textContent=who; $("#siOut").hidden=false;
+ $("#siList").innerHTML = list.length ? list.map(b=>`<div class="box" style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center">
+  <div><strong style="font:700 20px Outfit">${esc(b.id)}</strong> <span class="off" style="display:inline-block;margin-left:6px;padding:2px 10px;border-radius:99px;background:var(--accent-2);color:var(--accent);font:600 12px Outfit">${esc(STATUS[b.status]||b.status)}</span>
+   <p class="muted sm" style="margin:6px 0 0">${(b.items||[]).map(i=>esc(i.paper)+", "+esc(i.city)).join("; ")}<br>${(b.dates||[]).map(fmt).join(", ")} · <b>${inr(b.total)}</b></p></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:end">
+   ${b.status==="CREATED"?`<button class="btn sm primary" data-act="pay" data-id="${esc(b.id)}">Pay now</button>`:""}
+   <button class="btn sm" data-act="inv" data-id="${esc(b.id)}">Invoice</button>
+   <a class="btn sm" href="https://wa.me/919000000000?text=${encodeURIComponent("Change release date for "+b.id)}">Change date</a>
+   <a class="btn sm" href="https://wa.me/919000000000?text=${encodeURIComponent("Documents for booking "+b.id)}">Send documents</a></div></div>`).join("")
+  : `<div class="box" style="text-align:center"><h3>No bookings yet</h3><p class="muted">Your newspaper ads appear here after you book.</p><button class="btn primary" data-book>Book an ad</button></div>`;
+ $("#siOut").scrollIntoView({behavior:"smooth",block:"start"});
+ window._bk=Object.fromEntries(list.map(b=>[b.id,b]));
+}
+if (document.getElementById("lookForm")){
+ $("#lookForm").addEventListener("submit",async e=>{ e.preventDefault();
+  const id=$("#siId").value.trim().toUpperCase(), em=$("#siEmail").value.trim(), err=$("#lookErr");
+  if(!id){err.textContent="Enter the Ad ID from your confirmation.";return $("#siId").focus();}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Enter the email you used while booking.";return $("#siEmail").focus();}
+  const b=await findBooking(id,em);
+  if(!b){err.textContent="We couldn't find a booking with that ID and email. Check both, or message us on WhatsApp."; return;}
+  err.textContent=""; showBookings([b],`Booking ${id}`);
  });
+ let sent=false;
+ $("#codeForm").addEventListener("submit",e=>{ e.preventDefault();
+  const em=$("#cdEmail").value.trim(), err=$("#codeErr");
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Enter a valid email address.";return $("#cdEmail").focus();}
+  if(!sent){ sent=true; err.textContent=""; $("#cdEmail").readOnly=true; $("#cdWrap").hidden=false; $("#cdCode").focus(); $("#cdBtn").textContent="Verify and sign in"; $("#codeNote").textContent=`We've emailed a 6-digit code to ${em}. It expires in 10 minutes.`; return; }
+  if(!/^\d{6}$/.test($("#cdCode").value)){err.textContent="Enter the 6-digit code from your email.";return $("#cdCode").focus();}
+  // ponytail: needs an email provider on server.js to send and verify codes; until then this lists bookings stored in this browser for that email
+  const all=store.get("a2r_bookings",{});
+  showBookings(Object.keys(all).filter(id=>!all[id].email||all[id].email.toLowerCase()===em.toLowerCase()).map(id=>({id,...all[id]})),em);
+ });
+ $("#siList").addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(!b) return; const bk=window._bk[b.dataset.id];
+  if(b.dataset.act==="inv") invoiceWindow(bk); if(b.dataset.act==="pay") openWizardAt({}); });
 }
 
 /* ---------- inner-page widgets ---------- */

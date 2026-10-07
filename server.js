@@ -94,7 +94,9 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   if (req.method === "GET" && url.pathname.startsWith("/api/booking/")) {
     const b = load()[decodeURIComponent(url.pathname.slice(13)).toUpperCase()];
-    return b ? send(res, 200, { id: b.id, status: b.status, items: b.items, dates: b.dates, total: b.amount_paise / 100 }) : send(res, 404, { error: "Not found" });
+    const em = (url.searchParams.get("email") || "").toLowerCase();
+    // booking IDs are short, so the booker's email must match or it looks like the booking doesn't exist
+    return b && em && String(b.email).toLowerCase() === em ? send(res, 200, { id: b.id, status: b.status, items: b.items, dates: b.dates, total: b.amount_paise / 100 }) : send(res, 404, { error: "Not found" });
   }
   if (req.method === "POST") {
     let raw = ""; for await (const c of req) { raw += c; if (raw.length > 1e6) return send(res, 413, { error: "Too large" }); }

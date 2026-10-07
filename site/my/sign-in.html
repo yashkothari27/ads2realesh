@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("a2r_theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light")}catch{document.documentElement.dataset.theme="light"}</script>
-<title>Sign In | ads2realesh</title>
-<meta name="description" content="Sign in with your mobile number to see your newspaper ad bookings and invoices.">
+<title>Manage Your Booking | ads2realesh</title>
+<meta name="description" content="Find your newspaper ad booking with its ID, or get a sign-in code by email. Check status, download invoices and manage dates.">
 <link rel="canonical" href="https://www.ads2realesh.com/my/sign-in.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Noto+Sans+Devanagari:wght@800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Telugu:wght@800&family=Noto+Sans+Malayalam:wght@800&family=DM+Serif+Display&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Noto+Sans+Devanagari:wght@400;600;800&family=Noto+Sans+Gujarati:wght@400;600;800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Telugu:wght@800&family=Noto+Sans+Malayalam:wght@800&family=DM+Serif+Display&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
@@ -71,6 +71,7 @@
   <a href="mailto:book@ads2realesh.com"><svg class="i"><use href="#i-mail"/></svg>book@ads2realesh.com</a>
   <a href="#" data-open="track">Track booking</a>
   <a href="../my/sign-in.html">Sign in</a>
+  <label class="sr" for="langSel">Language</label><select id="langSel"><option value="en">English</option><option value="hi">हिन्दी</option><option value="gu">ગુજરાતી</option></select>
  </span>
 </div></div>
 
@@ -86,20 +87,26 @@
 </div></header>
 
 <main>
-<section><div class="wrap auth">
- <div class="box">
-  <h1 style="font:700 32px Outfit;margin:0 0 6px">Sign in</h1>
-  <p class="muted" id="siNote">Use your mobile number to see your bookings and invoices.</p>
-  <form id="siForm" novalidate>
-   <label class="f" for="siPhone">Mobile number</label><input id="siPhone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10-digit mobile">
-   <div id="siOtpWrap" hidden><label class="f" for="siOtp">6-digit code</label><input id="siOtp" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
-   <p class="err" id="siErr" role="alert"></p>
-   <button class="btn primary" id="siBtn" style="width:100%">Send code</button>
-  </form>
-  <div id="siOut" hidden><h2 style="font:700 22px Outfit">My bookings</h2><div class="plist" id="siList" style="grid-template-columns:1fr"></div></div>
+<section class="phero"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">Home</a> / <span aria-current="page">My bookings</span></nav>
+ <h1>Manage your booking</h1><p class="lead muted">No password needed. Find a single booking with its ID, or get a code by email to see all your orders.</p></div></section>
+<section><div class="wrap split" style="align-items:start">
+ <div class="grid2" style="grid-template-columns:1fr 1fr;align-items:start">
+  <form class="box" id="lookForm" novalidate><h2 style="font:700 22px Outfit;margin:0 0 4px">Find my booking</h2><p class="muted sm">Use the Ad ID from your confirmation SMS, WhatsApp or email.</p>
+   <label class="f" for="siId">Ad ID</label><input id="siId" placeholder="e.g. A2R-48213" autocomplete="off" style="text-transform:uppercase">
+   <label class="f" for="siEmail">Email used while booking</label><input id="siEmail" type="email" autocomplete="email">
+   <p class="err" id="lookErr" role="alert"></p><button class="btn primary" style="width:100%">Find my booking</button></form>
+  <form class="box" id="codeForm" novalidate><h2 style="font:700 22px Outfit;margin:0 0 4px">Email me a code</h2><p class="muted sm" id="codeNote">See every booking on your email. The code expires in 10 minutes.</p>
+   <label class="f" for="cdEmail">Email address</label><input id="cdEmail" type="email" autocomplete="email">
+   <div id="cdWrap" hidden><label class="f" for="cdCode">6-digit code</label><input id="cdCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+   <p class="err" id="codeErr" role="alert"></p><button class="btn primary" id="cdBtn" style="width:100%">Send me a code</button></form>
  </div>
- <p class="muted sm" style="text-align:center;margin-top:16px">No account needed to book. Sign-in only shows past orders.</p>
+ <div class="fl">
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-shield"/></svg></span><div><strong>No password</strong><p>A one-time code or your Ad ID is all you need.</p></div></div>
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-layers"/></svg></span><div><strong>All bookings in one place</strong><p>Status, invoices and proof of publication for every order.</p></div></div>
+  <div class="fi"><span class="ico"><svg class="i"><use href="#i-phone"/></svg></span><div><strong>Help on WhatsApp</strong><p>Message us from 10 am to 7 pm. <a href="https://wa.me/919000000000"><b>Open WhatsApp</b></a></p></div></div>
+ </div>
 </div></section>
+<section id="siOut" hidden style="background:var(--soft)"><div class="wrap"><div class="head"><div><h2>Your bookings</h2><p class="muted" id="siWho" style="margin:0"></p></div><a class="btn" href="../index.html" data-book>Book another ad</a></div><div id="siList" class="fl"></div></div></section>
 </main>
 
 <footer><div class="wrap">
@@ -108,7 +115,7 @@
   <div><h4>Categories</h4><div id="fCats"></div></div>
   <div><h4>Newspapers</h4><div id="fPapers"></div></div>
   <div><h4>Ad types</h4><a href="../index.html#types">Classified text</a><a href="../index.html#types">Classified display</a><a href="../index.html#types">Display ad</a><a href="../index.html#rates">Rates</a><a href="../index.html#notices">Legal notices</a></div>
-  <div><h4>Company</h4><a href="#">About us</a><a href="../index.html#how">How to book</a><a href="../index.html#faq">FAQ</a><a href="#">Contact</a><a href="#">Privacy policy</a><a href="#">Refund policy</a><a href="#">Terms and conditions</a></div>
+  <div><h4>Company</h4><a href="#">About us</a><a href="../index.html#how">How to book</a><a href="../index.html#faq">FAQ</a><a href="#">Contact</a><a href="#">Agency program</a><a href="../sitemap.xml">Sitemap</a><a href="#">Privacy policy</a><a href="#">Refund policy</a><a href="#">Terms and conditions</a></div>
  </div>
  <div class="base"><span>© <span id="yr"></span> ads2realesh. All rights reserved. GSTIN: to be added</span><span>Payments secured by Razorpay</span></div>
 </div></footer>
@@ -130,7 +137,7 @@
 
 <dialog id="track" class="small-dlg" aria-labelledby="trT">
  <h3 id="trT">Track your booking</h3>
- <form id="trForm"><label class="f" for="trId">Booking ID</label><input id="trId" placeholder="e.g. A2R-48213" required><p class="err" id="trErr"></p>
+ <form id="trForm"><label class="f" for="trId">Ad ID</label><input id="trId" placeholder="e.g. A2R-48213" required autocomplete="off"><label class="f" for="trEmail">Email used while booking</label><input id="trEmail" type="email" required autocomplete="email"><p class="err" id="trErr"></p>
  <div id="trOut"></div>
  <div style="display:flex;gap:8px;justify-content:end;margin-top:12px"><button type="button" class="btn" data-close>Close</button><button class="btn primary">Track</button></div></form>
 </dialog>
@@ -138,5 +145,7 @@
 
 <script src="../pricing.js"></script>
 <script src="../app.js"></script>
+<script src="../i18n-text.js"></script>
+<script src="../i18n.js"></script>
 </body>
 </html>
