@@ -4,3 +4,6 @@ node_modules/
 data/
 .DS_Store
 .vercel/
+
+# source rate cards stay local
+*.pdf

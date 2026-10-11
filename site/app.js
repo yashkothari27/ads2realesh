@@ -3,7 +3,8 @@ const CAT_ICON = {"Name change": "c-0", "Matrimonial": "c-1", "Property": "c-2",
 const NIL = ()=>document.createElement("div");
 const $ = (s,r=document)=>r.querySelector(s)||NIL(), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const CITIES = [...new Set(P.flatMap(p=>p.cities))].sort();
+const CITIES = CITIES_ORDER.filter(c=>P.some(p=>p.cities.includes(c)));
+const CITY_PAGES = CITIES.filter(c=>c!=="All Gujarat");
 const store = { get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
 /* ---------- page render ---------- */
@@ -15,29 +16,29 @@ $("#fCats").innerHTML = CATS.slice(0,7).map(c=>`<a href="#" data-cat="${esc(c)}"
 $("#fPapers").innerHTML = P.slice(0,7).map(p=>`<a href="#" data-paper="${esc(p.name)}">${esc(p.name)}</a>`).join("");
 const ROOT = new URL(".", document.currentScript.src).href;
 const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-$("#clist").innerHTML = CITIES.map(c=>`<a href="${ROOT}newspaper/city/${slug(c)}/index.html">${esc(c)}</a>`).join("");
+$("#clist").innerHTML = CITY_PAGES.map(c=>`<a href="${ROOT}newspaper/city/${slug(c)}/index.html">${esc(c)}</a>`).join("");
 $("#hsPaper").append(opt("","Any newspaper"),...P.map(p=>opt(p.name)));
 $("#hsCity").append(opt("","Any city"),...CITIES.map(c=>opt(c)));
 $("#fCat").append(...CATS.map(c=>opt(c)));
 $("#fCity").append(...CITIES.map(c=>opt(c)));
-$("#fCity").value = "Mumbai";
+$("#fCity").value = "Ahmedabad";
 
 let lang = "All";
 function renderPapers(){
  const list = P.filter(p=>lang==="All"||p.lang===lang);
  $("#langs").innerHTML = ["All",...LANGS].map(l=>`<button class="chip" aria-pressed="${l===lang}" data-lang="${l}">${l}</button>`).join("");
- const card=p=>`<div class="pitem"><div><strong>${esc(p.name)}</strong><small>${p.lang} · ${p.cities.length} editions · from ${inr(p.word)}/word</small></div><button class="btn sm" data-paper="${esc(p.name)}">Book</button></div>`;
+ const card=p=>`<div class="pitem"><div><strong>${esc(p.name)}</strong><small>${p.lang} · ${p.cities.length} edition${p.cities.length>1?"s":""} · ${fromLabel(p)}</small></div><button class="btn sm" data-paper="${esc(p.name)}">Book</button></div>`;
  if (lang!=="All") $("#plist").innerHTML = list.map(card).join("");
  else $("#plist").innerHTML = LANGS.filter(l=>list.some(p=>p.lang===l)).map(l=>`<h3 class="pgrp">${l==="English"?"English dailies":l+" papers"}</h3>`+list.filter(p=>p.lang===l).map(card).join("")).join("");
- $("#pcount").textContent = `${P.length} newspapers in ${LANGS.length} languages (sample list)`;
+ $("#pcount").textContent = `${P.length} Gujarat newspapers in Gujarati and English`;
 }
 renderPapers();
 $("#langs").addEventListener("click",e=>{const b=e.target.closest("[data-lang]"); if(b){lang=b.dataset.lang; renderPapers();}});
 
 function runFinder(){
  const cat=$("#fCat").value, city=$("#fCity").value, t=$("#fType").value;
- const rows = P.filter(p=>p.cities.includes(city)).map(p=>({p, q:quote({paper:p.name,cat,type:t,text:"w ".repeat(25),enh:[],dates:[1],w:4,h:5,color:false})})).sort((a,b)=>a.q.sub-b.q.sub);
- $("#fRes").innerHTML = rows.length ? rows.map(({p,q})=>`<tr><td>${esc(p.name)}</td><td>${p.lang}</td><td class="num">${q.unitLbl}</td><td class="num"><b>${inr(q.sub)}</b></td><td><button class="btn sm primary" data-paper="${esc(p.name)}" data-city="${esc(city)}" data-cat="${esc(cat)}" data-type="${t}">Book</button></td></tr>`).join("")
+ const rows = P.filter(p=>p.cities.includes(city)).map(p=>({p, q:quote({paper:p.name,city,cat,type:t,text:"w ".repeat(25),enh:[],dates:[1],w:4,h:5,color:false})})).sort((a,b)=>(a.q?a.q.sub:1e12)-(b.q?b.q.sub:1e12));
+ $("#fRes").innerHTML = rows.length ? rows.map(({p,q})=>`<tr><td>${esc(p.name)}</td><td>${p.lang}</td><td class="num">${q?q.unitLbl:"On request"}</td><td class="num"><b>${q?inr(q.sub):"On request"}</b></td><td><button class="btn sm primary" data-paper="${esc(p.name)}" data-city="${esc(city)}" data-cat="${esc(cat)}" data-type="${t}">${q?"Book":"Get a quote"}</button></td></tr>`).join("")
   : `<tr><td colspan="5" class="muted">No newspapers in our list publish in ${esc(city)} yet. Call us and we'll check regional papers.</td></tr>`;
 }
 $("#finder").addEventListener("submit",e=>{e.preventDefault();runFinder();});
@@ -71,10 +72,10 @@ function cutPath(){const pts=[],J=()=>(Math.random()*1.6).toFixed(2),n=9;
  return `polygon(${pts.join(",")})`;}
 $$(".mock").forEach(m=>m.style.setProperty("--cut",cutPath()));
 const ADS=[
- ["PROPERTY","2BHK on rent, Baner","Semi-furnished, 940 sq ft, 6th floor, covered parking. Walk to the IT park. Rs 32,000/month, family preferred. Owner: 98220 41736."],
- ["NAME CHANGE","Public notice","I, Kavita Ramesh Joshi, resident of Thane West, have changed my name to Kavita Anand Kulkarni for all purposes, as per affidavit dated 14 Sep."],
- ["RECRUITMENT","Site supervisors wanted","Civil diploma, 3 to 6 years on residential projects. Walk-in Saturday 10 am to 2 pm, Hinjewadi Phase 2. Carry original documents."],
- ["MATRIMONIAL","Alliance invited","For a Pune-based software engineer, 29, 5'9\", vegetarian family. Seeking an educated, working match. Biodata with photo: 99702 18564."],
+ ["PROPERTY","2BHK on rent, Bopal","Semi-furnished, 1,050 sq ft, 6th floor, covered parking. Near BRTS. Rs 18,000/month, family preferred. Owner: 98250 41736."],
+ ["NAME CHANGE","Public notice","I, Kavita Ramesh Joshi, resident of Maninagar, Ahmedabad, have changed my name to Kavita Anand Desai for all purposes, as per affidavit dated 14 Sep."],
+ ["RECRUITMENT","Site supervisors wanted","Civil diploma, 3 to 6 years on residential projects. Walk-in Saturday 10 am to 2 pm, GIDC Vatva, Ahmedabad. Carry original documents."],
+ ["MATRIMONIAL","Alliance invited","For an Ahmedabad-based software engineer, 29, 5'9\", vegetarian family. Seeking an educated, working match. Biodata with photo: 99702 18564."],
 ];
 const words = s => s.split(" ").map((w,i)=>`<span class="w" style="--i:${i}">${esc(w)}</span>`).join(" ");
 const wait = ms => new Promise(r=>setTimeout(r,ms));
@@ -100,24 +101,22 @@ if (document.getElementById("scene")) printLoop();
 
 
 /* ---------- rate card ---------- */
-const PKG_OFF = 0.12; // ponytail: flat indicative package discount; real offers come from the rates table
 $("#rcCat").append(...CATS.map(c=>opt(c)));
 $("#rcPaper").append(...P.map(p=>opt(p.name)));
 const rcFill = ()=>{ const p=P.find(x=>x.name===$("#rcPaper").value); $("#rcCity").replaceChildren(...p.cities.map(c=>opt(c))); };
 function rcRender(){
- const t=$("[name=rct]:checked").value, cat=$("#rcCat").value, p=P.find(x=>x.name===$("#rcPaper").value), city=$("#rcCity").value, cm=CAT_MULT[cat]||1;
- const unit = t==="ct" ? p.word*cm : p.sqcm*cm, u = t==="ct" ? "word" : "sq. cm";
- const sample = t==="ct" ? Math.max(25,p.min)*unit : 20*unit, n=p.cities.length;
- const pk = n>1 ? sample*n*(1-PKG_OFF) : 0;
+ const t=$("[name=rct]:checked").value, cat=$("#rcCat").value, p=P.find(x=>x.name===$("#rcPaper").value), city=$("#rcCity").value;
+ const sample = {paper:p.name,cat,type:t,text:"w ".repeat(25),dates:[1],w:4,h:5};
+ const rows = p.cities.map(c=>({c, q:quote({...sample,city:c})}));
+ const lbl = rateLabel(p,city,t,cat), mw = minWords(p,city,cat), r = clsRule(p,city,cat);
  $("#rcOut").innerHTML = `<div class="muted sm">${esc(p.name)} · ${esc(city)} · ${esc(cat)}</div>
-  <div class="big">${inr(unit)}<span style="font-size:18px;font-weight:500"> / ${u}</span></div>
-  <div class="muted sm">${t==="ct"?`Minimum ${p.min} words`:"Minimum about 4 × 5 cm"} · + 5% GST</div>
-  <table><thead><tr><th>Option</th><th>Before GST</th><th>With GST</th></tr></thead><tbody>
-   <tr><td>${t==="ct"?Math.max(25,p.min)+" words":"4 × 5 cm"}, ${esc(city)} only</td><td class="num">${inr(sample)}</td><td class="num">${inr(sample*1.05)}</td></tr>
-   ${n>1?`<tr><td>All ${n} editions <span class="off">${PKG_OFF*100}% OFF</span></td><td class="num">${inr(pk)}</td><td class="num">${inr(pk*1.05)}</td></tr>`:""}
+  <div class="big">${lbl}</div>
+  <div class="muted sm">${t==="ct" ? (r ? (r.line?`${r.line.lines} lines minimum, ${inr(r.line.extra)} per extra line`:`Minimum ${mw} words`) : "Our desk confirms this rate") : "Minimum about 4 × 5 cm"} · + 5% GST · Rate card ${esc(p.from)}</div>
+  <table><thead><tr><th>Edition</th><th>${t==="ct"?"25-word ad":"4 × 5 cm"}</th><th>With GST</th></tr></thead><tbody>
+   ${rows.map(({c,q})=>`<tr${c===city?' style="font-weight:600"':""}><td>${esc(c)}</td><td class="num">${q?inr(q.sub):"On request"}</td><td class="num">${q?inr(q.total):"-"}</td></tr>`).join("")}
   </tbody></table>
-  <button class="btn primary" style="width:100%;margin-top:18px" data-paper="${esc(p.name)}" data-city="${esc(city)}" data-cat="${esc(cat)}" data-type="${t}">Book this ad <svg class="i"><use href="#i-arrow"/></svg></button>
-  <p class="muted sm" style="margin:10px 0 0">Indicative rate. The final rate is confirmed at checkout.</p>`;
+  <button class="btn primary" style="width:100%;margin-top:18px" data-paper="${esc(p.name)}" data-city="${esc(city)}" data-cat="${esc(cat)}" data-type="${t}">${lbl==="On request"?"Get a quote":"Book this ad"} <svg class="i"><use href="#i-arrow"/></svg></button>
+  <p class="muted sm" style="margin:10px 0 0">From the newspaper's rate card. The final rate is confirmed at checkout.</p>`;
 }
 $("#rcPaper").addEventListener("change",()=>{rcFill();rcRender();});
 ["#rcCat","#rcCity"].forEach(id=>$(id).addEventListener("change",rcRender));
@@ -155,7 +154,7 @@ $("#menu").addEventListener("click",()=>$("#menu").classList.remove("open"));
 /* ---------- booking flow: Newspaper -> Compose -> Dates -> Pay ---------- */
 const STEPS = ["Newspaper","Compose","Dates","Details & pay"];
 let S, step = 0, viewMonth;
-function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,file:"",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
+function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
 const minDate = ()=>{const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+CUTOFF_DAYS+(new Date().getHours()>=17?1:0)); return d;};
 const iso = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmt = s=>new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",weekday:"short"});
@@ -179,8 +178,8 @@ function validate(){
  }
  return e;
 }
-const F = (id,label,html,hint="")=>`<label class="f" for="${id}">${label}</label>${html}${hint?`<p class="hint">${hint}</p>`:""}<p class="err" id="e-${id}"></p>`;
-const rateOf = x => S.type==="ct" ? inr(x.word)+"/word" : inr(x.sqcm*(S.type==="da"?DA_MULT:1))+"/sq. cm";
+const F = (id,label,html,hint="")=>`<div class="fld"><label class="f" for="${id}">${label}</label>${html}${hint?`<p class="hint">${hint}</p>`:""}<p class="err" id="e-${id}"></p></div>`;
+const rateOf = x => fromLabel(x, S.type);
 
 function stepHTML(){
  switch(step){
@@ -195,17 +194,17 @@ function stepHTML(){
   </div>
   ${S.items.length?`<div class="selchips">${S.items.map(it=>`<span class="selchip">${esc(it.paper)} · ${esc(it.city)}<button data-rm="${esc(key(it))}" aria-label="Remove ${esc(it.paper)} ${esc(it.city)}"><svg class="i"><use href="#i-x"/></svg></button></span>`).join("")}</div>`:""}
   <p class="err" id="e-items"></p>
-  <div class="pick">${list.map(x=>{const c=S.items.filter(i=>i.paper===x.name).length; return `<button class="opt" aria-pressed="${S._open===x.name}" aria-expanded="${S._open===x.name}" data-open-paper="${esc(x.name)}"><strong>${esc(x.name)}</strong><small>${x.lang} · ${x.cities.length} editions · from ${rateOf(x)}</small>${c?`<small style="color:var(--accent);font-weight:600">${c} selected</small>`:""}</button>`}).join("")||`<p class="muted">No newspapers match these filters. Clear a filter to see more.</p>`}</div>
-  ${open?`<div class="eds"><strong>${esc(open.name)}: tick the editions to publish in</strong><div class="checks" style="margin-top:10px">${open.cities.map(c=>`<label><input type="checkbox" data-ed="${esc(c)}" ${S.items.some(i=>i.paper===open.name&&i.city===c)?"checked":""}> ${esc(c)}</label>`).join("")}</div>
+  <div class="pick">${list.map(x=>{const c=S.items.filter(i=>i.paper===x.name).length; return `<button class="opt" aria-pressed="${S._open===x.name}" aria-expanded="${S._open===x.name}" data-open-paper="${esc(x.name)}"><strong>${esc(x.name)}</strong><small>${x.lang} · ${x.cities.length} edition${x.cities.length>1?"s":""} · ${rateOf(x)}</small>${c?`<small style="color:var(--accent);font-weight:600">${c} selected</small>`:""}</button>`}).join("")||`<p class="muted">No newspapers match these filters. Clear a filter to see more.</p>`}</div>
+  ${open?`<div class="eds"><strong>${esc(open.name)}: tick the editions to publish in</strong><div class="checks" style="margin-top:10px">${open.cities.map(c=>`<label><input type="checkbox" data-ed="${esc(c)}" ${S.items.some(i=>i.paper===open.name&&i.city===c)?"checked":""}> ${esc(c)} <span class="muted">${rateLabel(open,c,S.type,S.cat)}</span></label>`).join("")}</div>
    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn sm" data-all="1">All editions</button><button class="btn sm ghost" data-all="0">Clear</button></div></div>`:""}`; }
- case 1: { const mins = S.items.map(it=>P.find(x=>x.name===it.paper).min); const mn = Math.max(...mins);
+ case 1: { const mn = Math.max(0,...S.items.map(it=>minWords(P.find(x=>x.name===it.paper),it.city,S.cat)));
   if (S.type==="ct") return `<h3>Write your ad</h3>
-  ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. TO-LET 2BHK semi-furnished, Bandra W, near station. Rs 45,000/month. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
+  ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. TO-LET 2BHK semi-furnished, Satellite, near BRTS. Rs 18,000/month. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
   <label class="f">Enhancements</label><div class="checks">${ENH.map(([k,n,pc])=>`<label><input type="checkbox" data-enh="${k}" ${S.enh.includes(k)?"checked":""}> ${n} <span class="muted">+${pc}%</span></label>`).join("")}</div>
   <label class="f">Preview</label><div class="preview ${S.text?"":"empty"}" id="pv" style="color:#1c1917;${S.enh.includes("bold")?"font-weight:700;":""}${S.enh.includes("bg")?"background:#fde8e6;":""}${S.enh.includes("border")?"border:2px solid #1c1917;":""}">${S.enh.includes("tick")?"&#10003; ":""}${esc(S.text)||"Start typing to see your ad as it will print."}</div>`;
   return `<h3>Size and artwork</h3>
   <div class="row2">${F("w","Width (cm)",`<input id="w" type="number" min="2" max="33" step="1" value="${S.w}">`,"A standard column is about 4 cm")}${F("h","Height (cm)",`<input id="h" type="number" min="2" max="52" step="1" value="${S.h}">`)}</div>
-  <div class="checks"><label><input type="checkbox" id="color" ${S.color?"checked":""}> Colour ad <span class="muted">+30%</span></label></div>
+  <div class="row2">${S.type==="da"?F("page","Page",`<select id="page">${Object.entries(PAGES).map(([k,v])=>`<option value="${k}" ${S.page===k?"selected":""}>${v}</option>`).join("")}</select>`,"Front +100%, last +50%, third +25% on most papers"):"<div></div>"}<div class="checks" style="align-self:center"><label><input type="checkbox" id="color" ${S.color?"checked":""}> Colour ad</label></div></div>
   ${F("file","Artwork (JPG, PNG or PDF, up to 10 MB)",`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="fn">${S.file?esc(S.file):"Click to upload your artwork"}</span><input id="file" type="file" accept=".jpg,.jpeg,.png,.pdf" class="sr"></label>`)}
   ${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
  case 2: { const m=viewMonth, md=minDate(); const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate(); const lead=(m.getDay()+6)%7;
@@ -227,16 +226,16 @@ function stepHTML(){
   ${F("email","Email for invoice and proof",`<input id="email" type="email" autocomplete="email" value="${esc(S.email)}">`)}
   ${F("gstin","GSTIN (optional, for business invoice)",`<input id="gstin" maxlength="15" style="text-transform:uppercase" value="${esc(S.gstin)}">`)}
   <label style="display:flex;gap:10px;align-items:start;margin-top:12px;font-size:14px"><input type="checkbox" id="terms" style="width:auto;min-height:auto;margin-top:4px" ${S.terms?"checked":""}> I confirm the ad content is lawful and accept the terms, refund and privacy policies.</label><p class="err" id="e-terms"></p>
-  <p class="muted sm">Total ${inr(q.total)} for ${q.n} date${q.n>1?"s":""} × ${S.items.length} edition${S.items.length>1?"s":""}. You'll pay on the secure Razorpay page with UPI, card or netbanking.</p>`; }
+  ${q.req?`<p class="muted sm">Some editions you picked don't publish an online rate. We'll send you a quote for the whole order before you pay. Nothing is charged now.</p>`:`<p class="muted sm">Total ${inr(q.total)} for ${q.n} date${q.n>1?"s":""} × ${S.items.length} edition${S.items.length>1?"s":""}. You'll pay on the secure Razorpay page with UPI, card or netbanking.</p>`}`; }
  case 4: return `<div class="done"><div class="skel" style="width:60px;height:60px;border-radius:50%;margin:0 auto 18px;background:linear-gradient(90deg,var(--soft),var(--accent-2),var(--soft));background-size:200% 100%"></div><span class="eyebrow">Hang on. Don't close this tab.</span><h3>Confirming your payment</h3><p class="muted">We're checking with the bank and reserving your space with the newspapers. This takes a few seconds.</p></div>`;
- case 5: return `<div class="done"><div class="ico"><svg class="i" style="stroke:#fff"><use href="#i-check"/></svg></div><h3>Booking received</h3><p class="muted">Your booking ID</p><p class="bid">${S.id}</p><p class="muted">We've sent the details to ${esc(S.email)}. Our desk verifies the ad and releases it to ${S.items.length>1?S.items.length+" editions":esc(S.items[0].paper)}. The e-paper clipping comes to you on each publishing date.</p><p class="hint">A confirmation email with your GST invoice follows shortly.</p></div>`;
+ case 5: return `<div class="done"><div class="ico"><svg class="i" style="stroke:#fff"><use href="#i-check"/></svg></div><h3>${S.quote?"Quote request received":"Booking received"}</h3><p class="muted">Your booking ID</p><p class="bid">${S.id}</p><p class="muted">We've sent the details to ${esc(S.email)}. Our desk verifies the ad and releases it to ${S.items.length>1?S.items.length+" editions":esc(S.items[0].paper)}. The e-paper clipping comes to you on each publishing date.</p><p class="hint">A confirmation email with your GST invoice follows shortly.</p></div>`;
  }
 }
 function sideHTML(){
  const q = quoteAll(S), L=(k,v)=>`<div class="ln"><span>${k}</span><b>${v}</b></div>`;
  return `<strong>Your selection</strong>
   ${L("Format",TYPES[S.type].n)}${L("Category",esc(S.cat)||"-")}
-  ${S.items.length?`<hr style="border:none;border-top:1px solid var(--line)">`+(q.qs.map(x=>L(`${esc(x.paper)}<br><small>${esc(x.city)}</small>`,inr(x.q.per))).join("")):L("Editions","-")}
+  ${S.items.length?`<hr style="border:none;border-top:1px solid var(--line)">`+(q.qs.map(x=>L(`${esc(x.paper)}<br><small>${esc(x.city)}</small>`,x.q?inr(x.q.per):"On request")).join("")):L("Editions","-")}
   ${q?`<hr style="border:none;border-top:1px solid var(--line)">${L("Total / insertion",inr(q.perGst))}${L("Dates",S.dates.length||"-")}${L("Subtotal",inr(q.sub))}${L("GST 5%",inr(q.gst))}<div class="ln tot"><span>Total</span><span>${inr(q.total)}</span></div>${step<1?`<p class="hint">Shown for a minimum-length ad. The final price is set once you write the ad.</p>`:""}`:`<p class="muted sm" style="margin-top:10px">Pick an edition to see the price.</p>`}
   <div class="help"><a href="tel:+919000000000"><svg class="i"><use href="#i-phone"/></svg>Call us</a><a href="https://wa.me/919000000000"><svg class="i"><use href="#i-mail"/></svg>WhatsApp</a></div>`;
 }
@@ -245,20 +244,20 @@ function render(){
  $("#prog").innerHTML = STEPS.map((s,i)=>`<span class="${i<=step?"on":""}">${i+1}. ${s}</span>`).join("");
  $("#prog").style.display = fin?"none":"";
  const q = quoteAll(S);
- $("#selbar").innerHTML = fin?"":`<span>${S.items.length?`<b>${S.items.length}</b> edition${S.items.length>1?"s":""} selected`:"No edition selected yet"}</span><span>Total / insertion <b>${q?inr(q.perGst):"-"}</b></span>`;
+ $("#selbar").innerHTML = fin?"":`<span>${S.items.length?`<b>${S.items.length}</b> edition${S.items.length>1?"s":""} selected`:"No edition selected yet"}</span><span>Total / insertion <b>${!q?"-":q.req&&!q.per?"On request":inr(q.perGst)+(q.req?" + quote":"")}</b></span>`;
  const box=$("#stepBox"); box.classList.toggle("enter", box.dataset.step!==String(step)); box.dataset.step=step; box.innerHTML = stepHTML(); $("#side").innerHTML = sideHTML();
  $("#side").style.display = fin?"none":"";
  $(".wz-body").classList.toggle("solo",fin);
  $("#back").style.visibility = step===0||fin?"hidden":"visible";
  $("#next").style.display = step===4?"none":"";
- $("#next").innerHTML = step===3?`Pay ${inr(q.total)}`:step===5?"Done":`Continue<svg class="i"><use href="#i-chev"/></svg>`;
+ $("#next").innerHTML = step===3?(q.req?"Request quote":`Pay ${inr(q.total)}`):step===5?"Done":`Continue<svg class="i"><use href="#i-chev"/></svg>`;
  if (step<4) history.replaceState(null,"",`#book/step-${step+1}`);
  saveDraft();
 }
 function showErrors(e){ $$(".err",$("#stepBox")).forEach(x=>x.textContent=""); $$("[aria-invalid]",$("#stepBox")).forEach(x=>x.removeAttribute("aria-invalid"));
  for (const [k,m] of Object.entries(e)){ const el=$("#e-"+k); if(el) el.textContent=m; $("#"+k)?.setAttribute("aria-invalid","true"); }
  const f = Object.keys(e)[0]; if (f) ($("#"+f)||$("#e-"+f))?.focus?.(); }
-const refreshSide = ()=>{ $("#side").innerHTML = sideHTML(); const q=quoteAll(S); if(step===3&&q) $("#next").textContent=`Pay ${inr(q.total)}`; };
+const refreshSide = ()=>{ $("#side").innerHTML = sideHTML(); const q=quoteAll(S); if(step===3&&q) $("#next").textContent=q.req?"Request quote":`Pay ${inr(q.total)}`; };
 
 $("#stepBox").addEventListener("click",e=>{
  const t = e.target.closest("[data-set]"); if (t){ S[t.dataset.set]=t.dataset.v; if(t.dataset.set==="type") S.enh=[]; render(); return; }
@@ -273,6 +272,7 @@ $("#stepBox").addEventListener("click",e=>{
 });
 $("#stepBox").addEventListener("input",e=>{
  const t=e.target, id=t.id;
+ if (id) { const er=$("#e-"+id); if (er && er.textContent) { er.textContent=""; t.removeAttribute("aria-invalid"); } }
  if (id==="wLang"){S._lang=t.value; render(); return;} if (id==="wCityF"){S._cityF=t.value; render(); return;}
  if (id==="cat"){S.cat=t.value; render(); return;}
  if (t.dataset.ed){ const it={paper:S._open,city:t.dataset.ed}; S.items = t.checked?[...S.items,it]:S.items.filter(i=>key(i)!==key(it)); render(); return; }
@@ -280,6 +280,7 @@ $("#stepBox").addEventListener("input",e=>{
  if (t.dataset.enh){ S.enh = t.checked?[...S.enh,t.dataset.enh]:S.enh.filter(x=>x!==t.dataset.enh); render(); return; }
  if (id==="w"||id==="h") S[id]=+t.value;
  if (id==="color") S.color=t.checked;
+ if (id==="page") S.page=t.value;
  if (id==="file"){ const f=t.files[0]; if(f&&f.size>10*1024*1024){ $("#e-file").textContent="File is larger than 10 MB."; t.value=""; return;} S.file=f?f.name:""; $("#fn").textContent=S.file||"Click to upload your artwork"; }
  if (["name","email"].includes(id)) S[id]=t.value.trim();
  if (id==="phone"){ t.value=t.value.replace(/\D/g,""); S.phone=t.value; }
@@ -305,7 +306,7 @@ const loadScript = src => new Promise((ok,no)=>{ const s=document.createElement(
 async function pay(){
  if (location.protocol==="file:"){ await new Promise(r=>setTimeout(r,1800)); return localDemo(); } // opened without server.js
  const o = await api("/api/order", {...S, _lang:undefined, _cityF:undefined, _open:undefined});
- if (o.demo) return o.booking_id;
+ if (o.demo || o.quote) { S.quote = !!o.quote; return o.booking_id; }
  if (!window.Razorpay) await loadScript("https://checkout.razorpay.com/v1/checkout.js");
  const res = await new Promise((ok,no)=>{
   const rz = new Razorpay({ key:o.key_id, order_id:o.order_id, amount:o.amount, currency:"INR", name:"ads2realesh", description:`Booking ${o.booking_id}`, prefill:o.prefill, theme:{color:getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()},
@@ -317,12 +318,13 @@ async function pay(){
  return o.booking_id;
 }
 function localDemo(){
+ S.quote = quoteAll(S).req;
  const id = "A2R-" + String(Math.floor(10000+Math.random()*89999)), all = store.get("a2r_bookings",{});
  all[id] = {items:S.items,dates:S.dates,total:quoteAll(S).total,status:"DEMO",email:S.email}; store.set("a2r_bookings",all); return id;
 }
 function finishBooking(id){
  S.id=id; try{localStorage.removeItem("a2r_draft")}catch{}
- { const all=store.get("a2r_bookings",{}), q=quoteAll(S); all[id]={items:S.items,dates:S.dates,total:q.total,status:"PAID",email:S.email}; store.set("a2r_bookings",all); }
+ { const all=store.get("a2r_bookings",{}), q=quoteAll(S); all[id]={items:S.items,dates:S.dates,total:q.total,status:S.quote?"QUOTE":"PAID",email:S.email}; store.set("a2r_bookings",all); }
  step=5; render(); history.replaceState(null,"","#book/confirmed");
 }
 function closeWizard(){ $("#wiz").close(); }
@@ -374,18 +376,18 @@ $("#trForm").addEventListener("submit",async e=>{ e.preventDefault(); const id=$
 /* ---------- display ad sizes (newspaper-display-booking.html) ---------- */
 const SIZES = [["Small strip","8 × 5 cm",8,5],["Quarter column","8 × 12 cm",8,12],["Eighth page","16 × 13 cm",16,13],["Quarter page","16 × 25 cm",16,25],["Half page","33 × 25 cm",33,25],["Full page","33 × 50 cm",33,50]];
 if (document.getElementById("dsPaper")){
- const DP=P.filter(p=>p.sqcm); $("#dsPaper").append(...DP.map(p=>opt(p.name)));
+ const DP=P.filter(p=>p.cities.some(c=>boxRate(p,c,"da","")!=null)); $("#dsPaper").append(...DP.map(p=>opt(p.name)));
  const fillDs=()=>{ const p=P.find(x=>x.name===$("#dsPaper").value); $("#dsCity").replaceChildren(...p.cities.map(c=>opt(c))); };
  const drawDs=()=>{ const p=$("#dsPaper").value, city=$("#dsCity").value, col=$("#dsColor").checked;
-  $("#dsTable").innerHTML = SIZES.map(([n,lbl,w,h],i)=>{ const q=quote({paper:p,cat:"Business",type:"da",text:"",enh:[],dates:[1],w,h,color:col});
-   return `<tr style="--d:${i}"><td><b>${n}</b><br><small class="muted">${lbl}</small></td><td class="num">${inr(q.sub)}</td><td class="num">${inr(q.total)}</td><td><button class="btn sm primary" data-book="da" data-paper="${esc(p)}" data-city="${esc(city)}" data-cat="Business">Get a quote</button></td></tr>`; }).join("");
+  $("#dsTable").innerHTML = SIZES.map(([n,lbl,w,h],i)=>{ const q=quote({paper:p,city,cat:"Business",type:"da",text:"",enh:[],dates:[1],w,h,color:col});
+   return `<tr style="--d:${i}"><td><b>${n}</b><br><small class="muted">${lbl}</small></td><td class="num">${q?inr(q.sub):"On request"}</td><td class="num">${q?inr(q.total):"-"}</td><td><button class="btn sm primary" data-book="da" data-paper="${esc(p)}" data-city="${esc(city)}" data-cat="Business">Get a quote</button></td></tr>`; }).join("");
  };
  $("#dsPaper").addEventListener("change",()=>{fillDs();drawDs();}); $("#dsCity").addEventListener("change",drawDs); $("#dsColor").addEventListener("change",drawDs);
  fillDs(); drawDs();
 }
 
 /* ---------- manage booking (my/sign-in.html) ---------- */
-const STATUS={CREATED:"Awaiting payment",PAID:"Paid. Our desk is reviewing your ad.",DEMO:"Demo booking",PUBLISHED:"Published"};
+const STATUS={QUOTE:"Quote requested. We'll call you.",CREATED:"Awaiting payment",PAID:"Paid. Our desk is reviewing your ad.",DEMO:"Demo booking",PUBLISHED:"Published"};
 async function findBooking(id,email){
  try{ const r=await fetch(`/api/booking/${encodeURIComponent(id)}?email=${encodeURIComponent(email)}`); if(r.ok) return {id,...(await r.json())}; }catch{}
  const b=store.get("a2r_bookings",{})[id]; // browser-only copy (demo mode / static hosting)

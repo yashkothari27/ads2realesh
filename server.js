@@ -2,11 +2,12 @@
 // Run:  RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=xxx RAZORPAY_WEBHOOK_SECRET=xxx node server.js
 // Without keys it runs in demo mode (bookings are saved, no money is taken).
 const http = require("node:http"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
-const { P, CATS, TYPES, CUTOFF_DAYS, quoteAll, wordCount } = require("./site/pricing.js");
+const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount } = require("./site/pricing.js");
 
 const PORT = +process.env.PORT || 3000;
 const KEY_ID = process.env.RAZORPAY_KEY_ID || "", KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "", HOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
 const LIVE = !!(KEY_ID && KEY_SECRET);
+const RZP_API = process.env.RAZORPAY_API || "https://api.razorpay.com/v1"; // overridable only so tests can stand in for Razorpay
 const SITE = path.join(__dirname, "site"), DB = path.join(__dirname, "data", "bookings.json");
 
 /* ponytail: JSON file + single process; move to Postgres with UNIQUE(razorpay_payment_id) (docs/SRS.md) before running more than one instance */
@@ -35,14 +36,15 @@ function checkBooking(b) {
   if (!/^[6-9]\d{9}$/.test(b.phone)) err("Invalid mobile number.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) err("Invalid email.");
   const clean = { type: b.type, cat: b.cat, items: b.items.map(({ paper, city }) => ({ paper, city })), dates: [...new Set(b.dates)].sort(), text,
-    enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "border"].includes(x)), w, h, color: !!b.color, file: String(b.file || "").slice(0, 200),
+    enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "border"].includes(x)), w, h, color: !!b.color, page: PAGES[b.page] ? b.page : "inside", file: String(b.file || "").slice(0, 200),
     name: String(b.name).trim().slice(0, 100), phone: b.phone, email: String(b.email).slice(0, 200), gstin: String(b.gstin || "").slice(0, 15) };
   const q = quoteAll(clean);
-  return { ...clean, amount_paise: Math.round(q.total * 100) };
+  // editions without a published rate turn the whole order into a quote request; nothing is charged
+  return { ...clean, quote: q.req, amount_paise: q.req ? 0 : Math.round(q.total * 100) };
 }
 
 async function rzp(pathname, body) {
-  const r = await fetch("https://api.razorpay.com/v1" + pathname, {
+  const r = await fetch(RZP_API + pathname, {
     method: "POST", headers: { "content-type": "application/json", authorization: "Basic " + Buffer.from(KEY_ID + ":" + KEY_SECRET).toString("base64") },
     body: JSON.stringify(body),
   });
@@ -63,6 +65,7 @@ const routes = {
   "POST /api/order": async body => {
     const booking = checkBooking(body), db = load(), id = newId(db);
     db[id] = { ...booking, id, status: "CREATED", created_at: new Date().toISOString() };
+    if (booking.quote) { db[id].status = "QUOTE"; save(db); return { quote: true, booking_id: id }; }
     if (!LIVE) { markPaid(db, id, "demo", "demo"); save(db); return { demo: true, booking_id: id, amount: booking.amount_paise }; }
     const order = await rzp("/orders", { amount: booking.amount_paise, currency: "INR", receipt: id, notes: { booking_id: id } });
     db[id].razorpay_order_id = order.id; save(db);
@@ -117,9 +120,11 @@ const server = http.createServer(async (req, res) => {
 if (process.argv[2] === "--check") {
   const assert = require("node:assert");
   const d = new Date(); d.setDate(d.getDate() + 5); const day = d.toISOString().slice(0, 10);
-  const b = checkBooking({ type: "ct", cat: "Property", items: [{ paper: "Times of India", city: "Mumbai" }], dates: [day], text: "w ".repeat(25), name: "Test User", phone: "9876543210", email: "a@b.in" });
-  assert.equal(b.amount_paise, 73500, "server price must match the page");
-  assert.throws(() => checkBooking({ ...b, items: [{ paper: "Times of India", city: "Nowhere" }] }), /edition/);
+  const b = checkBooking({ type: "ct", cat: "Property", items: [{ paper: "Sandesh", city: "Ahmedabad" }], dates: [day], text: "w ".repeat(12), name: "Test User", phone: "9876543210", email: "a@b.in" });
+  assert.equal(b.amount_paise, 31500, "server price must match the page (12 words × ₹25 + 5% GST)");
+  const r = checkBooking({ ...b, items: [{ paper: "Indian Express", city: "Ahmedabad" }] });
+  assert.ok(r.quote && r.amount_paise === 0, "no rate card = quote request, not a charge");
+  assert.throws(() => checkBooking({ ...b, items: [{ paper: "Sandesh", city: "Nowhere" }] }), /edition/);
   assert.ok(safeEq(hmac("s", "o|p"), hmac("s", "o|p")) && !safeEq(hmac("s", "o|p"), hmac("s", "o|x")));
   const db = { X: { status: "CREATED" } }; markPaid(db, "X", "pay_1", "webhook"); markPaid(db, "X", "pay_2", "webhook");
   assert.equal(db.X.razorpay_payment_id, "pay_1", "replayed payment must not overwrite");

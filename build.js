@@ -1,7 +1,7 @@
 // Generates the inner pages from site/index.html (shared header, footer, dialogs, scripts).
 // Run after editing index.html, pricing.js or the copy below:  node build.js
 const fs = require("node:fs"), path = require("node:path");
-const { P, CATS, CAT_MULT, quote, inr } = require("./site/pricing.js");
+const { P, CATS, CITIES_ORDER, quote, inr, rateLabel, fromLabel, minWords } = require("./site/pricing.js");
 
 const SITE = path.join(__dirname, "site");
 const SITE_URL = "https://www.ads2realesh.com"; // ponytail: set to the real domain before launch
@@ -9,7 +9,8 @@ const src = fs.readFileSync(path.join(SITE, "index.html"), "utf8");
 const head = src.slice(0, src.indexOf("<main>")), main = src.slice(src.indexOf("<main>") + 6, src.indexOf("</main>")), tail = src.slice(src.indexOf("</main>") + 7);
 const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const CITIES = [...new Set(P.flatMap(p => p.cities))].sort();
+// Gujarat editions with their own pages; "All Gujarat" is a booking edition, not a city
+const CITIES = CITIES_ORDER.filter(c => c !== "All Gujarat" && P.some(p => p.cities.includes(c)));
 
 // reuse a <section id="..."> from the home page as-is
 function sec(id) {
@@ -52,12 +53,12 @@ const deadline = () => `<section><div class="wrap split" style="align-items:cent
  <div><h2>Book by 5 pm, in print tomorrow</h2><p class="lead muted">For most editions, a text classified that is booked and approved by 5 pm runs in the next morning's paper. Sunday editions and boxed ads need a little more time.</p>
   <div class="units" style="grid-template-columns:repeat(3,1fr)"><div><b>5 pm</b><small>Cutoff for next-day text ads</small></div><div><b>2 days</b><small>Safe lead time for Sunday</small></div><div><b>Same day</b><small>Proof sent to you</small></div></div></div>
  <div class="mock" aria-hidden="true"><div class="mh"><span>CLASSIFIEDS</span><span>TOMORROW</span></div><div class="cols">
-  <p><b>TO-LET</b> 2BHK Powai, lake view, Rs 52,000. Call 98xxxxxx31</p><p class="hl"><b>NAME CHANGE</b> I, Arjun Mehra, have changed my name to Arjun Kapoor.</p>
-  <p><b>WANTED</b> Cook for family of four, Juhu.</p><p><b>LOST</b> Original sale deed, flat 704, Chembur. Finder please call.</p><p><b>FOR SALE</b> Honda City 2019, single owner.</p><p><b>TUITION</b> Class 10 maths, Andheri E.</p></div></div>
+  <p><b>TO-LET</b> 2BHK Bopal, near BRTS, Rs 18,000. Call 98xxxxxx31</p><p class="hl"><b>NAME CHANGE</b> I, Hetal Patel, have changed my name to Hetal Shah.</p>
+  <p><b>WANTED</b> Cook for family of four, Satellite.</p><p><b>LOST</b> Original sale deed, flat 704, Navrangpura. Finder please call.</p><p><b>FOR SALE</b> Honda City 2019, single owner.</p><p><b>TUITION</b> Class 10 maths, Maninagar.</p></div></div>
 </div></section>`;
 const popular = () => `<section><div class="wrap"><h2>Popular searches</h2><div class="split" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
- <div><h3>By category</h3><div class="links" style="columns:1">${["Matrimonial", "Name change", "Property", "Recruitment", "Obituary", "Public notice"].map(c => `<a href="newspaper/city/mumbai/${slug(c)}.html">${c} ads in Mumbai</a>`).join("")}</div></div>
- <div><h3>By city</h3><div class="links" style="columns:1">${["Delhi", "Bengaluru", "Pune", "Kolkata", "Chennai", "Hyderabad"].map(c => `<a href="newspaper/city/${slug(c)}/index.html">Newspaper ads in ${c}</a>`).join("")}</div></div>
+ <div><h3>By category</h3><div class="links" style="columns:1">${["Matrimonial", "Name change", "Property", "Recruitment", "Obituary", "Public notice"].map(c => `<a href="newspaper/city/ahmedabad/${slug(c)}.html">${c} ads in Ahmedabad</a>`).join("")}</div></div>
+ <div><h3>By city</h3><div class="links" style="columns:1">${["Vadodara", "Surat", "Rajkot", "Bhavnagar", "Bhuj"].map(c => `<a href="newspaper/city/${slug(c)}/index.html">Newspaper ads in ${c}</a>`).join("")}</div></div>
  <div><h3>Guides</h3><div class="links" style="columns:1"><a href="newspaper-classified/rates-offer.html">Classified rates and offers</a><a href="newspaper-display-booking.html">Display ad sizes and cost</a><a href="index.html#notices">Legal and public notices</a><a href="index.html#how">How booking works</a></div></div>
 </div></div></section>`;
 const CL_FAQ = [
@@ -88,7 +89,7 @@ page("newspaper-classified/ad-booking.html", {
   <tr><th>Charged by</th><td>Word or line (text), sq. cm (boxed)</td></tr>
   <tr><th>Typical cost</th><td>₹200 to ₹3,500 per insertion</td></tr>
   <tr><th>Next-day cutoff</th><td>About 5 pm, varies by paper</td></tr>
-  <tr><th>Languages</th><td>English and 12 regional languages</td></tr>
+  <tr><th>Languages</th><td>Gujarati and English</td></tr>
   <tr><th>Payment</th><td>UPI, card, netbanking, with GST invoice</td></tr>
   <tr><th>Proof</th><td>E-paper clipping on each date</td></tr>
  </tbody></table></div>
@@ -185,11 +186,11 @@ page("my/sign-in.html", {
 
 const GUIDE = {
   _: ["Keep it short and clear: what, where, price and a contact number.", "Book before the cutoff, usually 5 pm the day before.", "Check names, numbers and dates on the proof before you approve it.", "Weekend editions are read more widely but close earlier."],
-  "Matrimonial": ["Sunday is the main matrimonial day in most papers, so book by Thursday or Friday.", "Photos are allowed only in boxed (classified display) ads.", "Include age, profession, community preference if any, and a contact.", "Ads are published under the paper's matrimonial headings, such as Brides Wanted or Grooms Wanted.", "Mention your community or preference so the ad is placed under the right community heading."],
+  "Matrimonial": ["Sandesh publishes matrimonial ads only on Sunday, across all its Gujarat editions. Book by Thursday or Friday.", "Photos are allowed only in boxed (classified display) ads.", "Include age, profession, community preference if any, and a contact.", "Ads are published under the paper's matrimonial headings, such as Brides Wanted or Grooms Wanted.", "Mention your community or preference so the ad is placed under the right community heading."],
   "Name change": ["Most papers need a copy of your affidavit or gazette notification.", "Publish in one English and one regional paper if your purpose (passport, gazette) asks for it.", "Write old and new names exactly as in your affidavit.", "Keep the clipping: you will need it for official records."],
   "Property": ["State locality, size, price and whether it is for rent or sale.", "Sunday property pages get the most readers.", "Avoid exact flat numbers for safety. A phone number is enough.", "Boxed ads with a photo work well for larger properties."],
-  "Recruitment": ["Mention the role, experience needed, location and how to apply.", "Walk-in ads should give the date, time and full address.", "Recruitment is charged at a higher rate in most papers.", "Boxed ads with your logo are easier to spot on busy job pages."],
-  "Obituary": ["Obituary and remembrance ads can include a photo as a boxed ad.", "Many papers accept same-day bookings for next-day obituaries. Call us if urgent.", "Include the name, date and details of the prayer meeting if any.", "We can write the text in the family's language."],
+  "Recruitment": ["Appointment pages run on Thursday and Saturday in Gujarat Samachar and Divya Bhaskar, and on Tuesday, Thursday and Saturday in Sandesh and Kutchmitra.", "Mention the role, experience needed, location and how to apply.", "Walk-in ads should give the date, time and full address.", "Recruitment is charged at a higher rate in most papers.", "Boxed ads with your logo are easier to spot on busy job pages."],
+  "Obituary": ["Besnu and Shraddhanjali ads are sold in fixed sizes (for example 9 × 5 cm) with a charge for each extra sq. cm. Obituary and remembrance ads can include a photo as a boxed ad.", "Many papers accept same-day bookings for next-day obituaries. Call us if urgent.", "Include the name, date and details of the prayer meeting if any.", "We can write the text in the family's language."],
   "Public notice": ["Legal notices often need publication in both an English and a regional paper.", "Use the exact wording given by your lawyer.", "Notices are charged at a special rate.", "Keep the clipping and invoice as proof of publication."],
   "Lost documents": ["Mention the document type, number if known, and where it was lost.", "Banks and registries often ask for the notice in two papers.", "Attach the police complaint number if you have one.", "Keep the clipping for your application."],
   "Tenders": ["Tender notices are charged at a special rate.", "Check the publication date against the tender's opening date.", "Most departments require both an English and a regional paper.", "Send the exact approved text. We do not edit tender wording."],
@@ -204,16 +205,17 @@ for (const city of CITIES) {
       `${papers.length} newspapers publish a ${esc(city)} edition. Pick what you want to announce to compare rates.`,
       `<button class="btn primary" data-city="${esc(city)}">Book an ad in ${esc(city)}</button>`)
       + `<section><div class="wrap"><h2>Choose a category</h2><div class="cats">${CATS.map(c => `<a class="cat" href="newspaper/city/${cs}/${slug(c)}.html"><span class="cico"><svg class="i"><use href="#i-tag"/></svg></span>${esc(c)}</a>`).join("")}</div></div></section>`
-      + `<section style="background:var(--soft)"><div class="wrap"><h2>Newspapers in ${esc(city)}</h2><div class="plist">${papers.map(p => `<div class="pitem"><div><strong>${esc(p.name)}</strong><small>${p.lang} · from ${inr(p.word)}/word</small></div><button class="btn sm" data-paper="${esc(p.name)}" data-city="${esc(city)}">Book</button></div>`).join("")}</div></div></section>`
+      + `<section style="background:var(--soft)"><div class="wrap"><h2>Newspapers in ${esc(city)}</h2><div class="plist">${papers.map(p => `<div class="pitem"><div><strong>${esc(p.name)}</strong><small>${p.lang} · ${rateLabel(p, city)}</small></div><button class="btn sm" data-paper="${esc(p.name)}" data-city="${esc(city)}">Book</button></div>`).join("")}</div></div></section>`
       + sec("how"),
   });
   for (const cat of CATS) {
-    const rows = papers.map(p => ({ p, q: quote({ paper: p.name, cat, type: "ct", text: "w ".repeat(25), enh: [], dates: [1], w: 4, h: 5 }) })).sort((a, b) => a.q.sub - b.q.sub);
+    const rows = papers.map(p => ({ p, q: quote({ paper: p.name, city, cat, type: "ct", text: "w ".repeat(25), enh: [], dates: [1], w: 4, h: 5 }) })).sort((a, b) => (a.q ? a.q.sub : 1e12) - (b.q ? b.q.sub : 1e12));
+    const priced = rows.filter(r => r.q), lo = priced[0], hi = priced[priced.length - 1];
     const lc = cat.toLowerCase();
     const g = GUIDE[cat] || GUIDE._;
     page(`newspaper/city/${cs}/${slug(cat)}.html`, {
       title: `${cat} Ads in ${city} Newspapers: Rates and Booking | ads2realesh`,
-      desc: `Publish a ${lc} ad in ${city}. Compare ${rows.length} newspapers from ${inr(rows[0].q.sub)} for 25 words, then book and pay online.`,
+      desc: `Publish a ${lc} ad in ${city}. Compare ${rows.length} newspapers${lo ? ` from ${inr(lo.q.sub)} for 25 words` : ""}, then book and pay online.`,
       body: hero([["Home", "index.html"], [city, `newspaper/city/${cs}/index.html`], [cat]], `${esc(cat)} ads in ${esc(city)} newspapers`,
         `Book a ${esc(lc)} ad in any of ${rows.length} papers with a ${esc(city)} edition. We write it, translate it and email you the published clipping.`,
         `<button class="btn primary" data-cat="${esc(cat)}" data-city="${esc(city)}">Book a ${esc(lc)} ad</button><a class="btn" href="#ccRates">Compare rates</a>`)
@@ -223,9 +225,9 @@ for (const city of CITIES) {
  <div><b style="font:700 18px Outfit">We prove it ran</b><p class="muted sm" style="margin:2px 0 0">E-paper clipping on every date.</p></div>
  <div><b style="font:700 18px Outfit">Book by 5 pm</b><p class="muted sm" style="margin:2px 0 0">Most editions run it tomorrow.</p></div></div></section>`
         + `<section id="ccRates"><div class="wrap">
- <div class="head"><div><h2>${esc(cat)} ad rates in ${esc(city)}</h2><p class="muted" style="margin:0">Prices for a 25-word text ad per insertion, before GST.${CAT_MULT[cat] ? " This category is charged at a special rate." : ""}</p></div>
+ <div class="head"><div><h2>${esc(cat)} ad rates in ${esc(city)}</h2><p class="muted" style="margin:0">Prices for a 25-word text ad per insertion, before GST.${["Astrology","Business","Retail","Services","Education","Computers"].includes(cat) ? " Commercial rates apply to this category where the paper has them." : ""}</p></div>
   <div class="seg" role="group" aria-label="Sort newspapers"><button class="segb" aria-pressed="true" data-sort="price">Lowest price</button><button class="segb" aria-pressed="false" data-sort="reach">English first</button></div></div>
- <div class="tbl"><table><thead><tr><th>Newspaper</th><th>Language</th><th>Rate</th><th>Min. words</th><th>25-word ad</th><th></th></tr></thead><tbody id="ccTable">${rows.map(({ p, q }) => `<tr data-price="${Math.round(q.sub)}" data-lang="${p.lang}"><td><b>${esc(p.name)}</b></td><td>${p.lang}</td><td class="num">${inr(p.word * (CAT_MULT[cat] || 1))}/word</td><td class="num">${p.min}</td><td class="num"><b>${inr(q.sub)}</b></td><td><button class="btn sm primary" data-paper="${esc(p.name)}" data-city="${esc(city)}" data-cat="${esc(cat)}" data-type="ct">Book</button></td></tr>`).join("")}</tbody></table></div>
+ <div class="tbl"><table><thead><tr><th>Newspaper</th><th>Language</th><th>Rate</th><th>Min. words</th><th>25-word ad</th><th></th></tr></thead><tbody id="ccTable">${rows.map(({ p, q }) => `<tr data-price="${q ? Math.round(q.sub) : 1e12}" data-lang="${p.lang}"><td><b>${esc(p.name)}</b></td><td>${p.lang}</td><td class="num">${rateLabel(p, city, "ct", cat)}</td><td class="num">${minWords(p, city, cat) || "-"}</td><td class="num"><b>${q ? inr(q.sub) : "On request"}</b></td><td><button class="btn sm primary" data-paper="${esc(p.name)}" data-city="${esc(city)}" data-cat="${esc(cat)}" data-type="ct">${q ? "Book" : "Get a quote"}</button></td></tr>`).join("")}</tbody></table></div>
  <p class="muted sm" style="margin-top:12px">Indicative rates. You see the exact price for your ad before you pay.</p>
 </div></section>`
         + `<section style="background:var(--soft)"><div class="wrap split">
@@ -244,10 +246,10 @@ for (const city of CITIES) {
  <div class="box"><h3>One booking for every paper</h3><p class="muted">Pick several ${esc(city)} newspapers in the booking form and they share one payment, one invoice and one set of dates. Not sure which to choose? Call us and we'll suggest the best mix for your budget.</p><button class="btn primary" data-cat="${esc(cat)}" data-city="${esc(city)}">Start booking</button></div>
 </div></section>`
         + faq(`${esc(cat)} ads in ${esc(city)}: questions`, [
-          [`How much does a ${esc(lc)} ad cost in ${esc(city)}?`, `A 25-word ad costs between ${inr(rows[0].q.sub)} and ${inr(rows[rows.length - 1].q.sub)} per insertion before GST, depending on the newspaper.`],
+          [`How much does a ${esc(lc)} ad cost in ${esc(city)}?`, lo ? `A 25-word ad costs between ${inr(lo.q.sub)} and ${inr(hi.q.sub)} per insertion before GST, depending on the newspaper.` : "Rates for this category are confirmed by our desk. Request a quote and we reply within the working day."],
           ["When is the booking deadline?", "Usually 5 pm the day before for text ads. Sunday editions close one or two days earlier, so book ahead for weekend dates."],
           [cat === "Matrimonial" || cat === "Obituary" || cat === "Remembrance" ? "Can I add a photo?" : "Can I make my ad stand out?", cat === "Matrimonial" || cat === "Obituary" || cat === "Remembrance" ? "Yes, as a boxed classified display ad charged per sq. cm. Choose Classified display in the booking form and upload the photo." : "Yes. Add bold text, a tick mark, a background colour or a border, or book a boxed ad with your logo."],
-          ["Can you translate my ad?", "Yes. Write it in English and our desk translates it into Hindi, Marathi or the paper's language for free, and shows you the proof first."],
+          ["Can you translate my ad?", "Yes. Write it in English and our desk translates it into Gujarati for free, and shows you the proof first."],
         ])
         + `<section style="background:var(--soft)"><div class="wrap split"><div><h2>Other ads in ${esc(city)}</h2><div class="links" style="columns:2 140px">${CATS.filter(c => c !== cat).map(c => `<a href="newspaper/city/${cs}/${slug(c)}.html">${esc(c)}</a>`).join("")}</div></div>
 <div><h2>${esc(cat)} ads in other cities</h2><div class="links" style="columns:2 140px">${CITIES.filter(c => c !== city).map(c => `<a href="newspaper/city/${slug(c)}/${slug(cat)}.html">${esc(c)}</a>`).join("")}</div></div></div></section>`,
