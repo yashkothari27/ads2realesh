@@ -2,7 +2,7 @@
 // Run:  RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=xxx RAZORPAY_WEBHOOK_SECRET=xxx node server.js
 // Without keys it runs in demo mode (bookings are saved, no money is taken).
 const http = require("node:http"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
-const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount } = require("./site/pricing.js");
+const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules } = require("./site/pricing.js");
 
 const PORT = +process.env.PORT || 3000;
 const KEY_ID = process.env.RAZORPAY_KEY_ID || "", KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "", HOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
@@ -30,13 +30,14 @@ function checkBooking(b) {
   for (const d of b.dates) if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || new Date(d + "T00:00") < min) err("A selected date is past the booking cutoff.");
   const text = String(b.text || "").slice(0, 1200);
   if (b.type === "ct" && wordCount(text) < 3) err("Ad text is too short.");
+  if (b.type === "ct") { const bad = adRules(b.cat, text); if (bad.length) err(bad[0]); } // same wording rules as the form
   const w = +b.w, h = +b.h;
   if (b.type !== "ct" && !(w >= 2 && w <= 33 && h >= 2 && h <= 52)) err("Invalid ad size.");
   if (String(b.name || "").trim().length < 2) err("Name is required.");
   if (!/^[6-9]\d{9}$/.test(b.phone)) err("Invalid mobile number.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) err("Invalid email.");
   const clean = { type: b.type, cat: b.cat, items: b.items.map(({ paper, city }) => ({ paper, city })), dates: [...new Set(b.dates)].sort(), text,
-    enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "border"].includes(x)), w, h, color: !!b.color, page: PAGES[b.page] ? b.page : "inside", file: String(b.file || "").slice(0, 200),
+    enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "web", "border"].includes(x)), w, h, color: !!b.color, page: PAGES[b.page] ? b.page : "inside", file: String(b.file || "").slice(0, 200),
     name: String(b.name).trim().slice(0, 100), phone: b.phone, email: String(b.email).slice(0, 200), gstin: String(b.gstin || "").slice(0, 15) };
   const q = quoteAll(clean);
   // editions without a published rate turn the whole order into a quote request; nothing is charged
@@ -120,9 +121,9 @@ const server = http.createServer(async (req, res) => {
 if (process.argv[2] === "--check") {
   const assert = require("node:assert");
   const d = new Date(); d.setDate(d.getDate() + 5); const day = d.toISOString().slice(0, 10);
-  const b = checkBooking({ type: "ct", cat: "Property", items: [{ paper: "Sandesh", city: "Ahmedabad" }], dates: [day], text: "w ".repeat(12), name: "Test User", phone: "9876543210", email: "a@b.in" });
+  const b = checkBooking({ type: "ct", cat: "Property", items: [{ paper: "Sandesh", city: "Ahmedabad" }], dates: [day], text: "FOR RENT flat in Bopal near BRTS call 9825041736 w w w", name: "Test User", phone: "9876543210", email: "a@b.in" });
   assert.equal(b.amount_paise, 31500, "server price must match the page (12 words × ₹25 + 5% GST)");
-  const r = checkBooking({ ...b, items: [{ paper: "Indian Express", city: "Ahmedabad" }] });
+  const r = checkBooking({ ...b, items: [{ paper: "Navgujarat Samay", city: "Ahmedabad" }] });
   assert.ok(r.quote && r.amount_paise === 0, "no rate card = quote request, not a charge");
   assert.throws(() => checkBooking({ ...b, items: [{ paper: "Sandesh", city: "Nowhere" }] }), /edition/);
   assert.ok(safeEq(hmac("s", "o|p"), hmac("s", "o|p")) && !safeEq(hmac("s", "o|p"), hmac("s", "o|x")));

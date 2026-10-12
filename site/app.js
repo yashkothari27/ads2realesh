@@ -4,7 +4,7 @@ const NIL = ()=>document.createElement("div");
 const $ = (s,r=document)=>r.querySelector(s)||NIL(), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const CITIES = CITIES_ORDER.filter(c=>P.some(p=>p.cities.includes(c)));
-const CITY_PAGES = CITIES.filter(c=>c!=="All Gujarat");
+const CITY_PAGES = GUJARAT.filter(c=>c!=="All Gujarat");
 $("#fCities").innerHTML = CITY_PAGES.map(c=>`<a href="${new URL(".", document.currentScript.src).href}newspaper/city/${c.toLowerCase().replace(/[^a-z0-9]+/g,"-")}/index.html">${esc(c)}</a>`).join("");
 const store = { get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
@@ -16,7 +16,8 @@ $("#strip").innerHTML = P.slice(0,14).map(p=>`<a href="#" data-paper="${esc(p.na
 const POPULAR = ["Matrimonial","Name change","Property","Recruitment","Obituary","Public notice","Lost documents","To let","Business","Education","Vehicles","Announcement"];
 const CAT_SORTED = [...POPULAR, ...CATS.filter(c=>!POPULAR.includes(c))];
 $("#cats").innerHTML = CAT_SORTED.map((c,i)=>`<button class="cat" data-cat="${esc(c)}" ${i>=12?"data-extra hidden":""}><span class="cico"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("");
-$("#catMore").addEventListener("click",e=>{ const open=e.currentTarget.getAttribute("aria-expanded")!=="true"; $$("#cats [data-extra]").forEach(b=>b.hidden=!open); e.currentTarget.setAttribute("aria-expanded",open); e.currentTarget.textContent=open?"Show fewer":"All 26 categories"; });
+$("#catMore").textContent=`All ${CATS.length} categories`;
+$("#catMore").addEventListener("click",e=>{ const open=e.currentTarget.getAttribute("aria-expanded")!=="true"; $$("#cats [data-extra]").forEach(b=>b.hidden=!open); e.currentTarget.setAttribute("aria-expanded",open); e.currentTarget.textContent=open?"Show fewer":`All ${CATS.length} categories`; });
 $("#fCats").innerHTML = CATS.slice(0,7).map(c=>`<a href="#" data-cat="${esc(c)}">${esc(c)}</a>`).join("");
 $("#fPapers").innerHTML = P.slice(0,7).map(p=>`<a href="#" data-paper="${esc(p.name)}">${esc(p.name)}</a>`).join("");
 const ROOT = new URL(".", document.currentScript.src).href;
@@ -170,7 +171,7 @@ function validate(){
  const e = {};
  if (step===0){ if(!S.cat) e.cat="Choose a category."; else if(!S.items.length) e.items="Pick a newspaper, then tick at least one edition."; }
  if (step===1){
-  if (S.type==="ct"){ if(wordCount(S.text)<3) e.text="Write your ad. It needs at least a few words."; }
+  if (S.type==="ct"){ if(wordCount(S.text)<3) e.text="Write your ad. It needs at least a few words."; else { const r=adRules(S.cat,S.text); if(r.length) e.text=r.join(" "); } }
   else { if(!(S.w>=2&&S.w<=33)) e.w="Width must be 2 to 33 cm."; if(!(S.h>=2&&S.h<=52)) e.h="Height must be 2 to 52 cm."; if(!S.file&&wordCount(S.text)<3) e.file="Upload your artwork, or describe the ad so our desk can design it."; }
  }
  if (step===2 && !S.dates.length) e.dates="Pick at least one publishing date.";
@@ -185,6 +186,14 @@ function validate(){
 }
 const F = (id,label,html,hint="")=>`<div class="fld"><label class="f" for="${id}">${label}</label>${html}${hint?`<p class="hint">${hint}</p>`:""}<p class="err" id="e-${id}"></p></div>`;
 const rateOf = x => fromLabel(x, S.type);
+// what an extra costs for the paper(s) picked
+function enhLabel(id, def){
+ const ps = [...new Set(S.items.map(i=>i.paper))].map(n=>P.find(x=>x.name===n));
+ const one = r => !r ? `+${def}%` : r.flat ? `+${inr(r.flat)}` : r.words ? `+${r.words} words` : `+${r.pct}%`;
+ const labels = [...new Set(ps.map(p=>one(p.enh&&p.enh[id])))];
+ if (id==="web" && !ps.some(p=>p.enh&&p.enh.web)) return "No extra charge";
+ return labels.length===1 ? labels[0] : "Varies by paper";
+}
 
 function stepHTML(){
  switch(step){
@@ -203,15 +212,17 @@ function stepHTML(){
   ${open?`<div class="eds"><strong>${esc(open.name)}: tick the editions to publish in</strong><div class="checks" style="margin-top:10px">${open.cities.map(c=>`<label><input type="checkbox" data-ed="${esc(c)}" ${S.items.some(i=>i.paper===open.name&&i.city===c)?"checked":""}> ${esc(c)} <span class="muted">${rateLabel(open,c,S.type,S.cat)}</span></label>`).join("")}</div>
    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn sm" data-all="1">All editions</button><button class="btn sm ghost" data-all="0">Clear</button></div></div>`:""}`; }
  case 1: { const mn = Math.max(0,...S.items.map(it=>minWords(P.find(x=>x.name===it.paper),it.city,S.cat)));
-  if (S.type==="ct") return `<h3>Write your ad</h3>
-  ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. TO-LET 2BHK semi-furnished, Satellite, near BRTS. Rs 18,000/month. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
-  <label class="f">Enhancements</label><div class="checks">${ENH.map(([k,n,pc])=>`<label><input type="checkbox" data-enh="${k}" ${S.enh.includes(k)?"checked":""}> ${n} <span class="muted">+${pc}%</span></label>`).join("")}</div>
+  const guide = AD_GUIDE[S.cat==="To let"?"Property":S.cat];
+  const help = guide ? `<div class="rules"><strong>${esc(S.cat)} ads must follow the newspaper's format</strong><ul>${guide.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>${S.cat==="Name change"?`<button class="btn sm" data-tpl>Use name-change format</button>`:""}</div>` : "";
+  if (S.type==="ct") return `<h3>Write your ad</h3>${help}
+  ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. FOR RENT 2BHK flat, Satellite, near BRTS, semi-furnished. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
+  <label class="f">Enhancements</label><div class="checks">${ENH.map(([k,n,pc])=>`<label><input type="checkbox" data-enh="${k}" ${S.enh.includes(k)?"checked":""}> ${n} <span class="muted">${enhLabel(k,pc)}</span></label>`).join("")}</div>
   <label class="f">Preview</label><div class="preview ${S.text?"":"empty"}" id="pv" style="color:#1c1917;${S.enh.includes("bold")?"font-weight:700;":""}${S.enh.includes("bg")?"background:#fde8e6;":""}${S.enh.includes("border")?"border:2px solid #1c1917;":""}">${S.enh.includes("tick")?"&#10003; ":""}${esc(S.text)||"Start typing to see your ad as it will print."}</div>`;
   return `<h3>Size and artwork</h3>
   <div class="row2">${F("w","Width (cm)",`<input id="w" type="number" min="2" max="33" step="1" value="${S.w}">`,"A standard column is about 4 cm")}${F("h","Height (cm)",`<input id="h" type="number" min="2" max="52" step="1" value="${S.h}">`)}</div>
   <div class="row2">${S.type==="da"?F("page","Page",`<select id="page">${Object.entries(PAGES).map(([k,v])=>`<option value="${k}" ${S.page===k?"selected":""}>${v}</option>`).join("")}</select>`,"Front +100%, last +50%, third +25% on most papers"):"<div></div>"}<div class="checks" style="align-self:center"><label><input type="checkbox" id="color" ${S.color?"checked":""}> Colour ad</label></div></div>
   ${F("file","Artwork (JPG, PNG or PDF, up to 10 MB)",`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="fn">${S.file?esc(S.file):"Click to upload your artwork"}</span><input id="file" type="file" accept=".jpg,.jpeg,.png,.pdf" class="sr"></label>`)}
-  ${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
+  ${help}${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
  case 2: { const m=viewMonth, md=minDate(); const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate(); const lead=(m.getDay()+6)%7;
   let cells=["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=>`<span class="dh">${d}</span>`).join("")+"<span></span>".repeat(lead);
   for(let d=1;d<=days;d++){const dt=new Date(m.getFullYear(),m.getMonth(),d), k=iso(dt); cells+=`<button data-date="${k}" ${dt<md?"disabled":""} aria-pressed="${S.dates.includes(k)}" aria-label="${fmt(k)}">${d}</button>`;}
@@ -273,7 +284,8 @@ $("#stepBox").addEventListener("click",e=>{
  const rm = e.target.closest("[data-rm]"); if (rm){ S.items=S.items.filter(i=>key(i)!==rm.dataset.rm); render(); return; }
  const d = e.target.closest("[data-date]"); if (d){ const k=d.dataset.date; S.dates = S.dates.includes(k)?S.dates.filter(x=>x!==k):[...S.dates,k]; render(); return; }
  const m = e.target.closest("[data-mon]"); if (m){ viewMonth.setMonth(viewMonth.getMonth()+ +m.dataset.mon); render(); return; }
- const g = e.target.closest("[data-go]"); if (g){ step=+g.dataset.go; render(); }
+ const g = e.target.closest("[data-go]"); if (g){ step=+g.dataset.go; render(); return; }
+ if (e.target.closest("[data-tpl]")){ S.text = NAME_CHANGE_TEMPLATE; render(); const t=$("#text"); t.focus(); t.setSelectionRange(t.value.indexOf("["), t.value.indexOf("]")+1); }
 });
 $("#stepBox").addEventListener("input",e=>{
  const t=e.target, id=t.id;

@@ -1,7 +1,7 @@
 // Generates the inner pages from site/index.html (shared header, footer, dialogs, scripts).
 // Run after editing index.html, pricing.js or the copy below:  node build.js
 const fs = require("node:fs"), path = require("node:path");
-const { P, CATS, CITIES_ORDER, quote, inr, rateLabel, fromLabel, minWords } = require("./site/pricing.js");
+const { P, CATS, CITIES_ORDER, GUJARAT, quote, inr, rateLabel, fromLabel, minWords } = require("./site/pricing.js");
 
 const SITE = path.join(__dirname, "site");
 const SITE_URL = "https://www.ad2release.com"; // ponytail: set to the real domain before launch
@@ -11,7 +11,7 @@ const head = src.slice(0, mOpen.index), main = src.slice(mOpen.index + mOpen[0].
 const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Gujarat editions with their own pages; "All Gujarat" is a booking edition, not a city
-const CITIES = CITIES_ORDER.filter(c => c !== "All Gujarat" && P.some(p => p.cities.includes(c)));
+const CITIES = GUJARAT.filter(c => c !== "All Gujarat" && P.some(p => p.cities.includes(c)));
 
 // reuse a <section id="..."> from the home page as-is
 function sec(id) {
