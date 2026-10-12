@@ -160,7 +160,7 @@ $("#menu").addEventListener("click",()=>$("#menu").classList.remove("open"));
 /* ---------- booking flow: Newspaper -> Compose -> Dates -> Pay ---------- */
 const STEPS = ["Newspaper","Compose","Dates","Details & pay"];
 let S, step = 0, viewMonth;
-function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
+function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
 const minDate = ()=>{const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+CUTOFF_DAYS+(new Date().getHours()>=17?1:0)); return d;};
 const iso = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmt = s=>new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",weekday:"short"});
@@ -174,6 +174,7 @@ function validate(){
   if (S.type==="ct"){ if(wordCount(S.text)<3) e.text="Write your ad. It needs at least a few words."; else { const r=adRules(S.cat,S.text); if(r.length) e.text=r.join(" "); } }
   else { if(!(S.w>=2&&S.w<=33)) e.w="Width must be 2 to 33 cm."; if(!(S.h>=2&&S.h<=52)) e.h="Height must be 2 to 52 cm."; if(!S.file&&wordCount(S.text)<3) e.file="Upload your artwork, or describe the ad so our desk can design it."; }
  }
+ if (step===1 && REQUIRED_DOCS[S.cat] && !S.doc) e.doc = `Upload the ${REQUIRED_DOCS[S.cat].toLowerCase()}. The newspaper won't print this notice without it.`;
  if (step===2 && !S.dates.length) e.dates="Pick at least one publishing date.";
  if (step===3){
   if (S.name.trim().length<2) e.name="Enter your full name.";
@@ -214,7 +215,8 @@ function stepHTML(){
  case 1: { const mn = Math.max(0,...S.items.map(it=>minWords(P.find(x=>x.name===it.paper),it.city,S.cat)));
   const guide = AD_GUIDE[S.cat==="To let"?"Property":S.cat];
   const help = guide ? `<div class="rules"><strong>${esc(S.cat)} ads must follow the newspaper's format</strong><ul>${guide.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>${S.cat==="Name change"?`<button class="btn sm" data-tpl>Use name-change format</button>`:""}</div>` : "";
-  if (S.type==="ct") return `<h3>Write your ad</h3>${help}
+  const docF = REQUIRED_DOCS[S.cat] ? F("doc",`Required document: ${esc(REQUIRED_DOCS[S.cat])}`,`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="dn">${S.doc?esc(S.doc):"Upload PDF or photo (up to 10 MB)"}</span><input id="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="sr"></label>`,"Our desk checks it before sending the notice to the newspaper.") : "";
+  if (S.type==="ct") return `<h3>Write your ad</h3>${help}${docF}
   ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. FOR RENT 2BHK flat, Satellite, near BRTS, semi-furnished. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
   <label class="f">Enhancements</label><div class="checks">${ENH.map(([k,n,pc])=>`<label><input type="checkbox" data-enh="${k}" ${S.enh.includes(k)?"checked":""}> ${n} <span class="muted">${enhLabel(k,pc)}</span></label>`).join("")}</div>
   <label class="f">Preview</label><div class="preview ${S.text?"":"empty"}" id="pv" style="color:#1c1917;${S.enh.includes("bold")?"font-weight:700;":""}${S.enh.includes("bg")?"background:#fde8e6;":""}${S.enh.includes("border")?"border:2px solid #1c1917;":""}">${S.enh.includes("tick")?"&#10003; ":""}${esc(S.text)||"Start typing to see your ad as it will print."}</div>`;
@@ -222,7 +224,7 @@ function stepHTML(){
   <div class="row2">${F("w","Width (cm)",`<input id="w" type="number" min="2" max="33" step="1" value="${S.w}">`,"A standard column is about 4 cm")}${F("h","Height (cm)",`<input id="h" type="number" min="2" max="52" step="1" value="${S.h}">`)}</div>
   <div class="row2">${S.type==="da"?F("page","Page",`<select id="page">${Object.entries(PAGES).map(([k,v])=>`<option value="${k}" ${S.page===k?"selected":""}>${v}</option>`).join("")}</select>`,"Front +100%, last +50%, third +25% on most papers"):"<div></div>"}<div class="checks" style="align-self:center"><label><input type="checkbox" id="color" ${S.color?"checked":""}> Colour ad</label></div></div>
   ${F("file","Artwork (JPG, PNG or PDF, up to 10 MB)",`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="fn">${S.file?esc(S.file):"Click to upload your artwork"}</span><input id="file" type="file" accept=".jpg,.jpeg,.png,.pdf" class="sr"></label>`)}
-  ${help}${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
+  ${help}${docF}${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
  case 2: { const m=viewMonth, md=minDate(); const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate(); const lead=(m.getDay()+6)%7;
   let cells=["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=>`<span class="dh">${d}</span>`).join("")+"<span></span>".repeat(lead);
   for(let d=1;d<=days;d++){const dt=new Date(m.getFullYear(),m.getMonth(),d), k=iso(dt); cells+=`<button data-date="${k}" ${dt<md?"disabled":""} aria-pressed="${S.dates.includes(k)}" aria-label="${fmt(k)}">${d}</button>`;}
@@ -236,6 +238,7 @@ function stepHTML(){
   <tr><th>Format</th><td>${TYPES[S.type].n} · ${esc(S.cat)}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
   <tr><th>Editions</th><td>${S.items.map(it=>`${esc(it.paper)}, ${esc(it.city)}`).join("<br>")}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
   <tr><th>${S.type==="ct"?"Ad text":"Size"}</th><td>${S.type==="ct"?esc(S.text):`${S.w} × ${S.h} cm${S.color?", colour":""}${S.file?"<br>"+esc(S.file):""}`}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>
+  ${S.doc?`<tr><th>Document</th><td>${esc(S.doc)}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>`:""}
   <tr><th>Dates</th><td>${[...S.dates].sort().map(fmt).join(", ")}</td><td><button class="btn sm" data-go="2">Edit</button></td></tr>
   </tbody></table></div>
   <div class="row2">${F("name","Full name",`<input id="name" autocomplete="name" value="${esc(S.name)}">`)}${F("phone","Mobile",`<input id="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" value="${esc(S.phone)}" placeholder="10-digit mobile">`)}</div>
@@ -298,6 +301,7 @@ $("#stepBox").addEventListener("input",e=>{
  if (id==="w"||id==="h") S[id]=+t.value;
  if (id==="color") S.color=t.checked;
  if (id==="page") S.page=t.value;
+ if (id==="doc"){ const f=t.files[0]; if(f&&f.size>10*1024*1024){ $("#e-doc").textContent="File is larger than 10 MB."; t.value=""; return;} S.doc=f?f.name:""; $("#dn").textContent=S.doc||"Upload PDF or photo (up to 10 MB)"; }
  if (id==="file"){ const f=t.files[0]; if(f&&f.size>10*1024*1024){ $("#e-file").textContent="File is larger than 10 MB."; t.value=""; return;} S.file=f?f.name:""; $("#fn").textContent=S.file||"Click to upload your artwork"; }
  if (["name","email"].includes(id)) S[id]=t.value.trim();
  if (id==="phone"){ t.value=t.value.replace(/\D/g,""); S.phone=t.value; }

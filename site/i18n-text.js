@@ -315,6 +315,12 @@ window.A2R_T = {
 "Give the age of the boy or girl and the caste.":["लड़के या लड़की की उम्र और जाति लिखें।", "છોકરા કે છોકરીની ઉંમર અને જ્ઞાતિ લખો."],
 "Use: I have changed my name from ... to ..., Address: ...":["फ़ॉर्मेट: I have changed my name from ... to ..., Address: ...", "ફોર્મેટ: I have changed my name from ... to ..., Address: ..."],
 "Leave out \"for all purposes\", \"vide affidavit dated...\" and \"notarized\".":["\"for all purposes\", \"vide affidavit dated...\" और \"notarized\" न लिखें।", "\"for all purposes\", \"vide affidavit dated...\" અને \"notarized\" ન લખો."],
+"Advocate's letterhead with signature and stamp":["वकील का लेटरहेड, हस्ताक्षर और मुहर के साथ", "વકીલનું લેટરહેડ, સહી અને સિક્કા સાથે"],
+"Court order":["कोर्ट का आदेश", "કોર્ટનો હુકમ"],
+"Affidavit or gazette notification":["हलफ़नामा या गज़ट अधिसूचना", "સોગંદનામું કે ગેઝેટ જાહેરનામું"],
+"Upload PDF or photo (up to 10 MB)":["PDF या फ़ोटो अपलोड करें (10 MB तक)", "PDF કે ફોટો અપલોડ કરો (10 MB સુધી)"],
+"Our desk checks it before sending the notice to the newspaper.":["अख़बार को सूचना भेजने से पहले हमारा डेस्क इसे जाँचता है।", "અખબારને નોટિસ મોકલતાં પહેલાં અમારું ડેસ્ક તે ચકાસે છે."],
+"Document":["दस्तावेज़", "દસ્તાવેજ"],
 // placeholders
 "e.g. A2R-48213":["जैसे A2R-48213","દા.ત. A2R-48213"],"10-digit mobile":["10 अंकों का मोबाइल","10 અંકનો મોબાઇલ"],
 "Headline, details, contact, and any logo or colours you want":["शीर्षक, विवरण, संपर्क, और कोई लोगो या रंग जो आप चाहें","મથાળું, વિગતો, સંપર્ક, અને કોઈ લોગો કે રંગ જે તમે ઇચ્છો"],

@@ -2,7 +2,7 @@
 // Run:  RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=xxx RAZORPAY_WEBHOOK_SECRET=xxx node server.js
 // Without keys it runs in demo mode (bookings are saved, no money is taken).
 const http = require("node:http"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
-const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules } = require("./site/pricing.js");
+const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules, REQUIRED_DOCS } = require("./site/pricing.js");
 
 const PORT = +process.env.PORT || 3000;
 const KEY_ID = process.env.RAZORPAY_KEY_ID || "", KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "", HOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
@@ -31,13 +31,14 @@ function checkBooking(b) {
   const text = String(b.text || "").slice(0, 1200);
   if (b.type === "ct" && wordCount(text) < 3) err("Ad text is too short.");
   if (b.type === "ct") { const bad = adRules(b.cat, text); if (bad.length) err(bad[0]); } // same wording rules as the form
+  if (REQUIRED_DOCS[b.cat] && !String(b.doc || "").trim()) err(`${REQUIRED_DOCS[b.cat]} is required for this notice.`);
   const w = +b.w, h = +b.h;
   if (b.type !== "ct" && !(w >= 2 && w <= 33 && h >= 2 && h <= 52)) err("Invalid ad size.");
   if (String(b.name || "").trim().length < 2) err("Name is required.");
   if (!/^[6-9]\d{9}$/.test(b.phone)) err("Invalid mobile number.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) err("Invalid email.");
   const clean = { type: b.type, cat: b.cat, items: b.items.map(({ paper, city }) => ({ paper, city })), dates: [...new Set(b.dates)].sort(), text,
-    enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "web", "border"].includes(x)), w, h, color: !!b.color, page: PAGES[b.page] ? b.page : "inside", file: String(b.file || "").slice(0, 200),
+    enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "web", "border"].includes(x)), w, h, color: !!b.color, page: PAGES[b.page] ? b.page : "inside", file: String(b.file || "").slice(0, 200), doc: String(b.doc || "").slice(0, 200),
     name: String(b.name).trim().slice(0, 100), phone: b.phone, email: String(b.email).slice(0, 200), gstin: String(b.gstin || "").slice(0, 15) };
   const q = quoteAll(clean);
   // editions without a published rate turn the whole order into a quote request; nothing is charged

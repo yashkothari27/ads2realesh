@@ -64,7 +64,7 @@ const P = [
  { name:"Sandesh", gu:"સંદેશ", lang:"Gujarati", unit:"sqcm", colW:3, from:"15 Oct 2023",
    enh:{bg:{pct:50}, web:{words:5}},
    prem:{front:100,last:50,third:25}, mat:{w:30,min:10,note:"Runs in all Gujarat editions, Sunday only"},
-   ed:{ "Ahmedabad":{w:25,c:85,min:10,cd:280,da:[475,650],appt:325,
+   ed:{ "Ahmedabad":{w:25,c:85,min:10,cdPkg:[{w:3,h:4,price:4200}],da:[475,650],appt:325,
           ov:{"Title clear notice":{line:{base:110,lines:1,extra:110,cpl:23}},"Court notice":{cc:360},
               "Obituary":{pkg:{w:9,h:5,price:2900,extra:60,per:"sqcm",stepSq:9}},
               "Remembrance":{pkg:{w:9,h:5,price:4500,extra:100,per:"sqcm",stepSq:9}}}},
@@ -77,7 +77,7 @@ const P = [
  { name:"Divya Bhaskar", gu:"દિવ્ય ભાસ્કર", lang:"Gujarati", unit:"colcm", colW:3.9, from:"1 Apr 2016",
    enh:{bg:{flat:125}, web:{flat:150}, bold:{flat:50}, tick:{flat:20}},
    prem:{front:100,last:50,third:25}, mat:{w:35,min:10},
-   ed:{ "Ahmedabad":{w:40,c:95,min:10,cdPkg:[{w:3,h:4,price:3360},{w:3,h:5,price:7000}],da:[4320,4320],appt:2050,
+   ed:{ "Ahmedabad":{w:40,c:95,min:10,cdPkg:[{w:3,h:5,price:7000}],da:[4320,4320],appt:2050,
           ov:{"Title clear notice":{line:{base:120,lines:1,extra:120,cpl:23}},"Court notice":{cc:350},
               "Obituary":{pkg:{w:9,h:5,price:5000,extra:55,per:"cc",stepCc:2}},
               "Remembrance":{pkg:{w:8,h:5,price:7400,extra:1500,per:"cc",stepCc:2,maxCc:20}}}},
@@ -246,6 +246,12 @@ const AD_GUIDE = {
  "Matrimonial": ["Write MATRIMONIAL or LAGNA VISHAYAK.", "Give the age of the boy or girl and the caste."],
  "Name change": ["Use: I have changed my name from ... to ..., Address: ...", "Leave out \"for all purposes\", \"vide affidavit dated...\" and \"notarized\"."],
 };
+const REQUIRED_DOCS = {
+ "Title clear notice": "Advocate's letterhead with signature and stamp",
+ "Court notice": "Court order",
+ "Name change": "Affidavit or gazette notification",
+ "Public notice": "Advocate's letterhead (signed and stamped), court order, affidavit or gazette, as applicable",
+};
 const NAME_CHANGE_TEMPLATE = "I have changed my name from [OLD NAME] to [NEW NAME], Address: [FULL ADDRESS]";
 const PROP_TYPES = [["flat"],["bungalow","bunglow"],["tenement","tenament"],["row house","rowhouse","raw house","rawhouse"],["penthouse","pent house"],["shop"],["office"],["showroom","show room"],["plot"]];
 const CASTES = /caste|patel|patidar|kadva|leuva|brahmin|brahman|jain|vania|vaniya|baniya|lohana|rajput|kshatriya|prajapati|soni|darji|panchal|suthar|mistry|modh|nagar|maheshwari|agarwal|marwadi|sindhi|bhanushali|ahir|koli|thakor|rabari|desai|christian|muslim|parsi|any caste|caste no bar/i;
@@ -291,10 +297,11 @@ console.assert(Math.round(quote({paper:"Sandesh",city:"Ahmedabad",cat:"Property"
 console.assert(Math.round(quote({paper:"Sandesh",city:"Ahmedabad",cat:"Astrology",type:"ct",text:"w",dates:[1]}).sub)===850, "commercial rate, 10-word minimum");
 console.assert(quote({paper:"Times of India",city:"Ahmedabad",cat:"Property",type:"ct",text:"x".repeat(130),dates:[1]}).sub===1020, "TOI 130 chars = 6 lines = 850 + 170");
 console.assert(quote({paper:"Sandesh",city:"Ahmedabad",cat:"Obituary",type:"cd",w:9,h:6,dates:[1]}).sub===2900+9*60, "Sandesh besnu 9x5 + one 9 sq. cm row");
-console.assert(quote({paper:"Divya Bhaskar",city:"Ahmedabad",cat:"Property",type:"cd",w:3,h:4,dates:[1]}).sub===3360, "DB boxed 3x4 minimum");
+console.assert(quote({paper:"Divya Bhaskar",city:"Ahmedabad",cat:"Property",type:"cd",w:3,h:4,dates:[1]}).sub===7000, "DB boxed minimum 3x5 ₹7,000");
+console.assert(quote({paper:"Sandesh",city:"Ahmedabad",cat:"Property",type:"cd",w:3,h:4,dates:[1]}).sub===4200, "Sandesh boxed minimum 3x4 ₹4,200");
 console.assert(quote({paper:"Divya Bhaskar",city:"Ahmedabad",cat:"Astrology",type:"ct",text:"w",dates:[1]}).sub===950, "DB business rate ₹95");
 console.assert(quote({paper:"Times of India",city:"Mumbai",cat:"Property",type:"ct",text:"x",dates:[1]}).sub===5500, "TOI Mumbai property 5 lines");
 console.assert(Math.round(quote({paper:"Gujarat Samachar",city:"Ahmedabad",cat:"Business",type:"da",w:3.9,h:10,dates:[1]}).sub)===27600, "GS 10 col-cm × ₹2760");
 console.assert(quote({paper:"Navgujarat Samay",city:"Ahmedabad",cat:"Property",type:"ct",text:"w",dates:[1]})===null, "no card = on request");
 
-if (typeof module!=="undefined") module.exports = {adRules,AD_GUIDE,NAME_CHANGE_TEMPLATE,LANGS,GUJARAT,CITIES_ORDER,P,CATS,TYPES,PAGES,ENH,CUTOFF_DAYS,GST,inr,quote,quoteAll,wordCount,clsRule,minWords,boxRate,rateLabel,fromLabel};
+if (typeof module!=="undefined") module.exports = {REQUIRED_DOCS,adRules,AD_GUIDE,NAME_CHANGE_TEMPLATE,LANGS,GUJARAT,CITIES_ORDER,P,CATS,TYPES,PAGES,ENH,CUTOFF_DAYS,GST,inr,quote,quoteAll,wordCount,clsRule,minWords,boxRate,rateLabel,fromLabel};
