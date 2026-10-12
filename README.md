@@ -1,4 +1,4 @@
-# ads2realesh
+# ad2release
 
 Newspaper ad booking site: classified, display and legal notices.
 

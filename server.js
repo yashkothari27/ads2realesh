@@ -1,4 +1,4 @@
-// ads2realesh server: static site + Razorpay payments. Node 18+, no dependencies.
+// ad2release server: static site + Razorpay payments. Node 18+, no dependencies.
 // Run:  RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=xxx RAZORPAY_WEBHOOK_SECRET=xxx node server.js
 // Without keys it runs in demo mode (bookings are saved, no money is taken).
 const http = require("node:http"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
@@ -130,5 +130,5 @@ if (process.argv[2] === "--check") {
   assert.equal(db.X.razorpay_payment_id, "pay_1", "replayed payment must not overwrite");
   console.log("checks ok");
 } else {
-  server.listen(PORT, () => console.log(`ads2realesh on http://localhost:${PORT} (${LIVE ? "Razorpay LIVE/TEST keys" : "DEMO mode: no keys set"})`));
+  server.listen(PORT, () => console.log(`ad2release on http://localhost:${PORT} (${LIVE ? "Razorpay LIVE/TEST keys" : "DEMO mode: no keys set"})`));
 }

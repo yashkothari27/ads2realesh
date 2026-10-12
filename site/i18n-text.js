@@ -71,7 +71,7 @@ window.A2R_T = {
 "Send your ad text":["अपना विज्ञापन टेक्स्ट भेजें","તમારી જાહેરાતનું લખાણ મોકલો"],
 "Use your booking ID":["अपनी बुकिंग ID इस्तेमाल करें","તમારું બુકિંગ ID વાપરો"],
 "Newspaper ad booking for classified, display and legal notices across India.":["पूरे भारत में क्लासिफ़ाइड, डिस्प्ले और कानूनी सूचनाओं की अख़बार विज्ञापन बुकिंग।","સમગ્ર ભારતમાં ક્લાસિફાઇડ, ડિસ્પ્લે અને કાનૂની નોટિસની અખબાર જાહેરાત બુકિંગ."],
-"ads2realesh. All rights reserved. GSTIN: to be added":["ads2realesh. सर्वाधिकार सुरक्षित। GSTIN: जल्द जोड़ा जाएगा","ads2realesh. સર્વાધિકાર સુરક્ષિત. GSTIN: ટૂંક સમયમાં ઉમેરાશે"],
+"ad2release. All rights reserved. GSTIN: to be added":["ad2release. सर्वाधिकार सुरक्षित। GSTIN: जल्द जोड़ा जाएगा","ad2release. સર્વાધિકાર સુરક્ષિત. GSTIN: ટૂંક સમયમાં ઉમેરાશે"],
 "Payments secured by Razorpay":["भुगतान Razorpay द्वारा सुरक्षित","ચુકવણી Razorpay દ્વારા સુરક્ષિત"],
 "Track your booking":["अपनी बुकिंग ट्रैक करें","તમારું બુકિંગ ટ્રેક કરો"],"Close":["बंद करें","બંધ કરો"],"Track":["ट्रैक करें","ટ્રેક કરો"],
 // ---- classified page
@@ -299,7 +299,7 @@ window.A2R_T = {
 "e.g. A2R-48213":["जैसे A2R-48213","દા.ત. A2R-48213"],"10-digit mobile":["10 अंकों का मोबाइल","10 અંકનો મોબાઇલ"],
 "Headline, details, contact, and any logo or colours you want":["शीर्षक, विवरण, संपर्क, और कोई लोगो या रंग जो आप चाहें","મથાળું, વિગતો, સંપર્ક, અને કોઈ લોગો કે રંગ જે તમે ઇચ્છો"],
 "Language":["भाषा","ભાષા"],"Menu":["मेन्यू","મેનુ"],"Close":["बंद करें","બંધ કરો"],"Previous month":["पिछला महीना","પાછલો મહિનો"],"Next month":["अगला महीना","આવતો મહિનો"],
-// page titles (text before " | ads2realesh")
+// page titles (text before " | ad2release")
 "Book Newspaper Ads in Gujarat at Card Rates":["गुजरात में कार्ड दरों पर अख़बार विज्ञापन बुक करें","ગુજરાતમાં કાર્ડ દરે અખબાર જાહેરાત બુક કરો"],
 "Book a Classified Ad in Any Newspaper":["किसी भी अख़बार में क्लासिफ़ाइड विज्ञापन बुक करें","કોઈપણ અખબારમાં ક્લાસિફાઇડ જાહેરાત બુક કરો"],
 "Newspaper Classified Ad Rates and Offers":["अख़बार क्लासिफ़ाइड विज्ञापन दरें और ऑफ़र","અખબાર ક્લાસિફાઇડ જાહેરાતના દરો અને ઑફર"],

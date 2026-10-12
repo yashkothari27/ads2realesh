@@ -5,13 +5,18 @@ const $ = (s,r=document)=>r.querySelector(s)||NIL(), $$ = (s,r=document)=>[...r.
 const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const CITIES = CITIES_ORDER.filter(c=>P.some(p=>p.cities.includes(c)));
 const CITY_PAGES = CITIES.filter(c=>c!=="All Gujarat");
+$("#fCities").innerHTML = CITY_PAGES.map(c=>`<a href="${new URL(".", document.currentScript.src).href}newspaper/city/${c.toLowerCase().replace(/[^a-z0-9]+/g,"-")}/index.html">${esc(c)}</a>`).join("");
 const store = { get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
 /* ---------- page render ---------- */
 $("#yr").textContent = new Date().getFullYear();
 const opt = (v,t=v)=>new Option(t,v);
 $("#strip").innerHTML = P.slice(0,14).map(p=>`<a href="#" data-paper="${esc(p.name)}">${esc(p.name)}</a>`).join("");
-$("#cats").innerHTML = CATS.map(c=>`<button class="cat" data-cat="${esc(c)}"><span class="cico"><svg class="i"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("");
+// 12 most-booked Gujarat categories first; the rest open with "All categories"
+const POPULAR = ["Matrimonial","Name change","Property","Recruitment","Obituary","Public notice","Lost documents","To let","Business","Education","Vehicles","Announcement"];
+const CAT_SORTED = [...POPULAR, ...CATS.filter(c=>!POPULAR.includes(c))];
+$("#cats").innerHTML = CAT_SORTED.map((c,i)=>`<button class="cat" data-cat="${esc(c)}" ${i>=12?"data-extra hidden":""}><span class="cico"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("");
+$("#catMore").addEventListener("click",e=>{ const open=e.currentTarget.getAttribute("aria-expanded")!=="true"; $$("#cats [data-extra]").forEach(b=>b.hidden=!open); e.currentTarget.setAttribute("aria-expanded",open); e.currentTarget.textContent=open?"Show fewer":"All 26 categories"; });
 $("#fCats").innerHTML = CATS.slice(0,7).map(c=>`<a href="#" data-cat="${esc(c)}">${esc(c)}</a>`).join("");
 $("#fPapers").innerHTML = P.slice(0,7).map(p=>`<a href="#" data-paper="${esc(p.name)}">${esc(p.name)}</a>`).join("");
 const ROOT = new URL(".", document.currentScript.src).href;
@@ -309,7 +314,7 @@ async function pay(){
  if (o.demo || o.quote) { S.quote = !!o.quote; return o.booking_id; }
  if (!window.Razorpay) await loadScript("https://checkout.razorpay.com/v1/checkout.js");
  const res = await new Promise((ok,no)=>{
-  const rz = new Razorpay({ key:o.key_id, order_id:o.order_id, amount:o.amount, currency:"INR", name:"ads2realesh", description:`Booking ${o.booking_id}`, prefill:o.prefill, theme:{color:getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()},
+  const rz = new Razorpay({ key:o.key_id, order_id:o.order_id, amount:o.amount, currency:"INR", name:"ad2release", description:`Booking ${o.booking_id}`, prefill:o.prefill, theme:{color:getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()},
    handler: ok, modal:{ ondismiss:()=>no(new Error("Payment cancelled. You haven't been charged.")) } });
   rz.on("payment.failed", r=>no(new Error(r.error?.description||"Payment failed. You haven't been charged.")));
   rz.open();
@@ -396,7 +401,7 @@ async function findBooking(id,email){
 function invoiceWindow(b){
  const w=window.open("","_blank"); if(!w) return alert("Allow pop-ups to download the invoice.");
  const sub=b.total/1.05, gst=b.total-sub;
- w.document.write(`<title>Invoice ${esc(b.id)}</title><body style="font:15px/1.5 system-ui;max-width:640px;margin:40px auto;color:#1c1917"><h1 style="margin:0">ads2realesh</h1><p>Tax invoice for booking <b>${esc(b.id)}</b></p><table style="width:100%;border-collapse:collapse"><tr><td style="padding:8px 0;border-bottom:1px solid #ddd">${(b.items||[]).map(i=>esc(i.paper)+", "+esc(i.city)).join("<br>")}<br><small>${b.dates.map(fmt).join(", ")}</small></td><td style="text-align:right;border-bottom:1px solid #ddd">${inr(sub)}</td></tr><tr><td style="padding:8px 0">GST 5%</td><td style="text-align:right">${inr(gst)}</td></tr><tr><td style="padding:8px 0"><b>Total</b></td><td style="text-align:right"><b>${inr(b.total)}</b></td></tr></table><p style="color:#666">Placeholder invoice. GSTIN and legal details are added before launch.</p><script>print()<\/script></body>`);
+ w.document.write(`<title>Invoice ${esc(b.id)}</title><body style="font:15px/1.5 system-ui;max-width:640px;margin:40px auto;color:#1c1917"><h1 style="margin:0">ad2release</h1><p>Tax invoice for booking <b>${esc(b.id)}</b></p><table style="width:100%;border-collapse:collapse"><tr><td style="padding:8px 0;border-bottom:1px solid #ddd">${(b.items||[]).map(i=>esc(i.paper)+", "+esc(i.city)).join("<br>")}<br><small>${b.dates.map(fmt).join(", ")}</small></td><td style="text-align:right;border-bottom:1px solid #ddd">${inr(sub)}</td></tr><tr><td style="padding:8px 0">GST 5%</td><td style="text-align:right">${inr(gst)}</td></tr><tr><td style="padding:8px 0"><b>Total</b></td><td style="text-align:right"><b>${inr(b.total)}</b></td></tr></table><p style="color:#666">Placeholder invoice. GSTIN and legal details are added before launch.</p><script>print()<\/script></body>`);
  w.document.close();
 }
 function showBookings(list,who){

@@ -4,9 +4,10 @@ const fs = require("node:fs"), path = require("node:path");
 const { P, CATS, CITIES_ORDER, quote, inr, rateLabel, fromLabel, minWords } = require("./site/pricing.js");
 
 const SITE = path.join(__dirname, "site");
-const SITE_URL = "https://www.ads2realesh.com"; // ponytail: set to the real domain before launch
+const SITE_URL = "https://www.ad2release.com"; // ponytail: set to the real domain before launch
 const src = fs.readFileSync(path.join(SITE, "index.html"), "utf8");
-const head = src.slice(0, src.indexOf("<main>")), main = src.slice(src.indexOf("<main>") + 6, src.indexOf("</main>")), tail = src.slice(src.indexOf("</main>") + 7);
+const mOpen = src.match(/<main\b[^>]*>/); if (!mOpen) throw new Error("index.html has no <main>");
+const head = src.slice(0, mOpen.index), main = src.slice(mOpen.index + mOpen[0].length, src.indexOf("</main>")), tail = src.slice(src.indexOf("</main>") + 7);
 const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Gujarat editions with their own pages; "All Gujarat" is a booking edition, not a city
@@ -34,7 +35,7 @@ function page(rel, { title, desc, body }) {
   let h = head
     .replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`)
     .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${esc(desc)}">\n<link rel="canonical" href="${SITE_URL}/${rel}">`);
-  const html = relink(h + "<main>\n" + body + "\n</main>" + tail, up);
+  const html = relink(h + mOpen[0] + "\n" + body + "\n</main>" + tail, up);
   const file = path.join(SITE, rel);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, html);
@@ -59,7 +60,7 @@ const deadline = () => `<section><div class="wrap split" style="align-items:cent
 const popular = () => `<section><div class="wrap"><h2>Popular searches</h2><div class="split" style="grid-template-columns:repeat(3,1fr);margin-top:20px">
  <div><h3>By category</h3><div class="links" style="columns:1">${["Matrimonial", "Name change", "Property", "Recruitment", "Obituary", "Public notice"].map(c => `<a href="newspaper/city/ahmedabad/${slug(c)}.html">${c} ads in Ahmedabad</a>`).join("")}</div></div>
  <div><h3>By city</h3><div class="links" style="columns:1">${["Vadodara", "Surat", "Rajkot", "Bhavnagar", "Bhuj"].map(c => `<a href="newspaper/city/${slug(c)}/index.html">Newspaper ads in ${c}</a>`).join("")}</div></div>
- <div><h3>Guides</h3><div class="links" style="columns:1"><a href="newspaper-classified/rates-offer.html">Classified rates and offers</a><a href="newspaper-display-booking.html">Display ad sizes and cost</a><a href="index.html#notices">Legal and public notices</a><a href="index.html#how">How booking works</a></div></div>
+ <div><h3>Guides</h3><div class="links" style="columns:1"><a href="newspaper-classified/rates-offer.html">Classified rates and offers</a><a href="newspaper-display-booking.html">Display ad sizes and cost</a><a href="newspaper-classified/ad-booking.html#notices">Legal and public notices</a><a href="index.html#how">How booking works</a></div></div>
 </div></div></section>`;
 const CL_FAQ = [
   ["How much does a classified ad cost?", "It depends on the newspaper, the city edition and the length of the ad. Most text classifieds cost between a few hundred and a few thousand rupees per insertion, plus 5% GST. You see the exact total before you pay."],
@@ -71,7 +72,7 @@ const CL_FAQ = [
 
 /* ---- classified booking ---- */
 page("newspaper-classified/ad-booking.html", {
-  title: "Book a Classified Ad in Any Newspaper | ads2realesh",
+  title: "Book a Classified Ad in Any Newspaper | ad2release",
   desc: "Book text and boxed classified ads in 100+ Indian newspapers. Pick a category, write your ad, choose dates and pay online.",
   body: hero([["Home", "index.html"], ["Classified ads"]], "Book a classified ad in any newspaper",
     "Text and boxed classifieds in English and regional papers, at the newspaper's own card rate.",
@@ -94,12 +95,12 @@ page("newspaper-classified/ad-booking.html", {
   <tr><th>Proof</th><td>E-paper clipping on each date</td></tr>
  </tbody></table></div>
 </div></section>`
-    + faq("Classified ad questions", CL_FAQ) + popular(),
+    + sec("notices") + faq("Classified ad questions", CL_FAQ) + popular(),
 });
 
 /* ---- rates & offers ---- */
 page("newspaper-classified/rates-offer.html", {
-  title: "Newspaper Classified Ad Rates and Offers | ads2realesh",
+  title: "Newspaper Classified Ad Rates and Offers | ad2release",
   desc: "Check classified ad rates by newspaper, edition and category. Package discounts for booking several editions together.",
   body: hero([["Home", "index.html"], ["Classified ads", "newspaper-classified/ad-booking.html"], ["Rates and offers"]], "Classified ad rates and offers",
     "Choose a format, category, newspaper and edition to see the rate. Book several editions together for a package price.",
@@ -110,12 +111,12 @@ page("newspaper-classified/rates-offer.html", {
 /* ---- display booking ---- */
 const DCATS = [["Appointments", "Job openings and walk-ins on the main or careers pages."], ["Retail and sales", "Store openings, festive sales and offers."], ["Education", "Admissions, results and coaching batches."], ["Property", "Project launches and site-visit drives."], ["Financial results", "Quarterly results and statutory company notices."], ["Court notices", "Summons and notices ordered by a court."], ["Obituary", "Larger tributes with a photo on the news pages."], ["Tenders", "Government and corporate tender notices."]];
 page("newspaper-display-booking.html", {
-  title: "Book a Display Ad in the Newspaper | ads2realesh",
+  title: "Book a Display Ad in the Newspaper | ad2release",
   desc: "Display ads on the main news pages of Indian newspapers. Compare sizes and estimated costs, then request a quote.",
   body: `<section class="phero"><div class="wrap split" style="align-items:center">
  <div><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a> / <span aria-current="page">Display ads</span></nav>
   <h1>Book a display ad on the news pages</h1><p class="lead muted">From a small strip to a full page. Tell us the paper and section and we send your rate within the working day.</p></div>
- <form class="box" id="dqForm"><h3>Get your rate</h3>
+ <form class="box" id="dqForm"><h2 style="font-size:22px">Get your rate</h2>
   <label class="f" for="dqPaper">Newspaper</label><select id="dqPaper"></select>
   <label class="f" for="dqCity">City edition</label><select id="dqCity"></select>
   <label class="f" for="dqSec">Page or section</label><select id="dqSec"><option>Main news pages</option><option>City pages</option><option>Business pages</option><option>Sports pages</option><option>Weekend supplement</option></select>
@@ -160,7 +161,7 @@ page("newspaper-display-booking.html", {
 
 /* ---- sign in ---- */
 page("my/sign-in.html", {
-  title: "Manage Your Booking | ads2realesh",
+  title: "Manage Your Booking | ad2release",
   desc: "Find your newspaper ad booking with its ID, or get a sign-in code by email. Check status, download invoices and manage dates.",
   body: `<section class="phero"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a> / <span aria-current="page">My bookings</span></nav>
  <h1>Manage your booking</h1><p class="lead muted">No password needed. Find a single booking with its ID, or get a code by email to see all your orders.</p></div></section>
@@ -199,7 +200,7 @@ const GUIDE = {
 for (const city of CITIES) {
   const papers = P.filter(p => p.cities.includes(city)), cs = slug(city);
   page(`newspaper/city/${cs}/index.html`, {
-    title: `Newspaper Ads in ${city}: Rates and Booking | ads2realesh`,
+    title: `Newspaper Ads in ${city}: Rates and Booking | ad2release`,
     desc: `Book classified and display ads in ${papers.length} newspapers published in ${city}. Compare rates and book online.`,
     body: hero([["Home", "index.html"], ["Cities", "index.html#cities"], [city]], `Newspaper ads in ${esc(city)}`,
       `${papers.length} newspapers publish a ${esc(city)} edition. Pick what you want to announce to compare rates.`,
@@ -214,7 +215,7 @@ for (const city of CITIES) {
     const lc = cat.toLowerCase();
     const g = GUIDE[cat] || GUIDE._;
     page(`newspaper/city/${cs}/${slug(cat)}.html`, {
-      title: `${cat} Ads in ${city} Newspapers: Rates and Booking | ads2realesh`,
+      title: `${cat} Ads in ${city} Newspapers: Rates and Booking | ad2release`,
       desc: `Publish a ${lc} ad in ${city}. Compare ${rows.length} newspapers${lo ? ` from ${inr(lo.q.sub)} for 25 words` : ""}, then book and pay online.`,
       body: hero([["Home", "index.html"], [city, `newspaper/city/${cs}/index.html`], [cat]], `${esc(cat)} ads in ${esc(city)} newspapers`,
         `Book a ${esc(lc)} ad in any of ${rows.length} papers with a ${esc(city)} edition. We write it, translate it and email you the published clipping.`,
