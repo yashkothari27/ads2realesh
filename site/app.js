@@ -160,7 +160,7 @@ $("#menu").addEventListener("click",()=>$("#menu").classList.remove("open"));
 /* ---------- booking flow: Newspaper -> Compose -> Dates -> Pay ---------- */
 const STEPS = ["Newspaper","Compose","Dates","Details & pay"];
 let S, step = 0, viewMonth;
-function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
+function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",fileKey:"",docKey:"",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
 const minDate = ()=>{const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+CUTOFF_DAYS+(new Date().getHours()>=17?1:0)); return d;};
 const iso = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmt = s=>new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",weekday:"short"});
@@ -174,7 +174,8 @@ function validate(){
   if (S.type==="ct"){ if(wordCount(S.text)<3) e.text="Write your ad. It needs at least a few words."; else { const r=adRules(S.cat,S.text); if(r.length) e.text=r.join(" "); } }
   else { if(!(S.w>=2&&S.w<=33)) e.w="Width must be 2 to 33 cm."; if(!(S.h>=2&&S.h<=52)) e.h="Height must be 2 to 52 cm."; if(!S.file&&wordCount(S.text)<3) e.file="Upload your artwork, or describe the ad so our desk can design it."; }
  }
- if (step===1 && REQUIRED_DOCS[S.cat] && !S.doc) e.doc = `Upload the ${REQUIRED_DOCS[S.cat].toLowerCase()}. The newspaper won't print this notice without it.`;
+ if (step===1 && S._uploading) e.doc = e.file = "Please wait for the upload to finish.";
+ if (step===1 && REQUIRED_DOCS[S.cat] && !S.docKey) e.doc = `Upload the ${REQUIRED_DOCS[S.cat].toLowerCase()}. The newspaper won't print this notice without it.`;
  if (step===2 && !S.dates.length) e.dates="Pick at least one publishing date.";
  if (step===3){
   if (S.name.trim().length<2) e.name="Enter your full name.";
@@ -301,8 +302,8 @@ $("#stepBox").addEventListener("input",e=>{
  if (id==="w"||id==="h") S[id]=+t.value;
  if (id==="color") S.color=t.checked;
  if (id==="page") S.page=t.value;
- if (id==="doc"){ const f=t.files[0]; if(f&&f.size>10*1024*1024){ $("#e-doc").textContent="File is larger than 10 MB."; t.value=""; return;} S.doc=f?f.name:""; $("#dn").textContent=S.doc||"Upload PDF or photo (up to 10 MB)"; }
- if (id==="file"){ const f=t.files[0]; if(f&&f.size>10*1024*1024){ $("#e-file").textContent="File is larger than 10 MB."; t.value=""; return;} S.file=f?f.name:""; $("#fn").textContent=S.file||"Click to upload your artwork"; }
+ if (id==="doc"){ upload(t, "doc", "dn", "Upload PDF or photo (up to 10 MB)"); return; }
+ if (id==="file"){ upload(t, "file", "fn", "Click to upload your artwork"); return; }
  if (["name","email"].includes(id)) S[id]=t.value.trim();
  if (id==="phone"){ t.value=t.value.replace(/\D/g,""); S.phone=t.value; }
  if (id==="gstin"){ S.gstin=t.value.toUpperCase().trim(); }
@@ -347,6 +348,26 @@ function finishBooking(id){
  S.id=id; try{localStorage.removeItem("a2r_draft")}catch{}
  { const all=store.get("a2r_bookings",{}), q=quoteAll(S); all[id]={items:S.items,dates:S.dates,total:q.total,status:S.quote?"QUOTE":"PAID",email:S.email}; store.set("a2r_bookings",all); }
  step=5; render(); history.replaceState(null,"","#book/confirmed");
+}
+
+/* ---------- uploads: server signs a slot, the file goes straight to storage (Google Cloud Storage in production) ---------- */
+const UP_OK = ["application/pdf","image/jpeg","image/png"];
+async function upload(input, field, labelId, emptyText){
+ const f = input.files[0], err = $("#e-"+field), lbl = $("#"+labelId);
+ S[field] = ""; S[field+"Key"] = ""; err.textContent = "";
+ if (!f) { lbl.textContent = emptyText; return; }
+ if (!UP_OK.includes(f.type)) { err.textContent = "Upload a PDF, JPG or PNG file."; input.value=""; lbl.textContent = emptyText; return; }
+ if (!f.size) { err.textContent = "This file is empty. Choose the document again."; input.value=""; lbl.textContent = emptyText; return; }
+ if (f.size > 10*1024*1024) { err.textContent = "File must be 10 MB or smaller."; input.value=""; lbl.textContent = emptyText; return; }
+ if (location.protocol === "file:") { S[field] = f.name; S[field+"Key"] = "local"; lbl.textContent = "Attached: " + f.name; return; } // opened without server.js
+ S._uploading = (S._uploading||0) + 1; lbl.textContent = "Uploading " + f.name + "...";
+ try {
+  const slot = await api("/api/upload-url", { type: f.type, size: f.size });
+  const r = await fetch(slot.url, { method: "PUT", headers: slot.headers, body: f });
+  if (!r.ok) throw new Error();
+  S[field] = f.name; S[field+"Key"] = slot.key; lbl.textContent = "Uploaded: " + f.name;
+ } catch (x) { err.textContent = (x && x.message && !/fetch|network/i.test(x.message)) ? x.message : "Upload didn't go through. Check your connection and try again."; input.value=""; lbl.textContent = emptyText; }
+ finally { S._uploading--; refreshSide(); saveDraft(); }
 }
 function closeWizard(){ $("#wiz").close(); }
 $("#wiz").addEventListener("close",()=>history.replaceState(null,"",location.pathname+location.search));
