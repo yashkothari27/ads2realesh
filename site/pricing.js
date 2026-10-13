@@ -246,6 +246,27 @@ const AD_GUIDE = {
  "Matrimonial": ["Write MATRIMONIAL or LAGNA VISHAYAK.", "Give the age of the boy or girl and the caste."],
  "Name change": ["Use: I have changed my name from ... to ..., Address: ...", "Leave out \"for all purposes\", \"vide affidavit dated...\" and \"notarized\"."],
 };
+// sub-categories: the heading the ad is printed under; customers pick one where a category has them
+const SUBCATS = {
+ "Property": ["For sale","For rent","Required on rent","Required on sale","Commercial property","Plot / land"],
+ "To let": ["Residential","Commercial","PG / hostel"],
+ "Recruitment": ["Situation vacant","Walk-in interview","Part-time / work from home","Teachers and education jobs","Drivers and security"],
+ "Matrimonial": ["Brides wanted","Grooms wanted","Patel","Brahmin","Jain / Vania","Other communities","Second marriage","NRI"],
+ "Name change": ["Name change","Name change for passport","Name change (gazette)","Spelling correction","Surname change after marriage"],
+ "Obituary": ["Besnu (prayer meeting)","Uthamna","Shraddhanjali","Death notice"],
+ "Remembrance": ["First death anniversary","Punyatithi","In memoriam"],
+ "Public notice": ["Lost document","General public notice","Disowning notice","Caution notice"],
+ "Court notice": ["Summons","Court order notice","Lok adalat notice"],
+ "Lost and found": ["Lost documents","Lost certificate","Lost passport","Missing person"],
+ "Business": ["Business offers","Franchise","Hotel for sale","Partnership"],
+ "Travel": ["Tour packages","Taxi and car rental","Hotels and resorts"],
+ "Education": ["Admissions","Coaching and tuition","Results"],
+ "Vehicles": ["Cars for sale","Two-wheelers","Commercial vehicles"],
+ "Finance and loans": ["Loans","Investment"],
+ "Medical": ["Clinics and hospitals","Ayurveda and wellness"],
+ "Astrology": ["Astrology","Vastu"],
+ "Personal and greetings": ["Birthday","Anniversary","Congratulations"],
+};
 const REQUIRED_DOCS = {
  "Title clear notice": "Advocate's letterhead with signature and stamp",
  "Court notice": "Court order",
@@ -255,31 +276,46 @@ const REQUIRED_DOCS = {
 const NAME_CHANGE_TEMPLATE = "I have changed my name from [OLD NAME] to [NEW NAME], Address: [FULL ADDRESS]";
 const PROP_TYPES = [["flat"],["bungalow","bunglow"],["tenement","tenament"],["row house","rowhouse","raw house","rawhouse"],["penthouse","pent house"],["shop"],["office"],["showroom","show room"],["plot"]];
 const CASTES = /caste|patel|patidar|kadva|leuva|brahmin|brahman|jain|vania|vaniya|baniya|lohana|rajput|kshatriya|prajapati|soni|darji|panchal|suthar|mistry|modh|nagar|maheshwari|agarwal|marwadi|sindhi|bhanushali|ahir|koli|thakor|rabari|desai|christian|muslim|parsi|any caste|caste no bar/i;
+// Gujarati equivalents so ads typed in Gujarati pass the same checks
+const GU = {
+ intent: /વેચાણ|વેચવાન|વેચવા|ભાડે|જોઈએ\s*છે|જોઇએ\s*છે/,
+ types: [/ફ્લેટ|ફલેટ/,/બંગલો|બંગ્લો/,/ટેનામેન્ટ|ટેનેમેન્ટ/,/રો\s*હાઉસ/,/પેન્ટ\s*હાઉસ/,/દુકાન/,/ઓફિસ|ઑફિસ/,/શો\s*રૂમ/,/પ્લોટ/],
+ price: /રૂ\.?\s*[\d૦-૯]|[\d૦-૯]\s*(લાખ|કરોડ)|કિંમત|ભાવ/,
+ build: /(જૂનું|નવું)\s*બાંધકામ|તમામ\s*સુવિધા/,
+ yard: /([\d૦-૯][\d૦-૯,]*)\s*(ચો\.?\s*વાર|ચોરસ\s*વાર|વાર)/,
+ required: /જોઈએ\s*છે|જોઇએ\s*છે|જરૂર\s*છે/,
+ gender: /પુરુષ|સ્ત્રી|મહિલા|ભાઈ|બહેન/,
+ matri: /લગ્નવિષયક|લગ્ન\s*વિષયક/,
+ age: /(ઉંમર|ઉમર)\s*[:\-]?\s*[\d૦-૯]{2}|[\d૦-૯]{2}\s*(વર્ષ)/,
+ caste: /જ્ઞાતિ|પટેલ|પાટીદાર|બ્રાહ્મણ|જૈન|વણિક|લોહાણા|રાજપૂત|પ્રજાપતિ|સોની|દરજી|પંચાલ|સુથાર|મોઢ|નાગર|કડવા|લેઉવા|ઠાકોર|કોળી|આહીર|દેસાઈ|ખ્રિસ્તી|મુસ્લિમ|પારસી/,
+ nc: /નામ.*બદલ/, addr: /સરનામું\s*:/, ncBad: /સોગંદનામા|સોગંદનામું|નોટરી|તમામ\s*હેતુ/,
+};
+const guDigits = x => String(x).replace(/[૦-૯]/g, d => "૦૧૨૩૪૫૬૭૮૯".indexOf(d));
 function adRules(cat, text){
  const t = " " + String(text||"").toLowerCase().replace(/\s+/g," ") + " ", err = [];
  if (!t.trim()) return err;
  if (cat === "Recruitment") {
-  if (!/\brequired\b/.test(t)) err.push("Recruitment ads must say REQUIRED.");
-  if (!/\b(male|female)\b/.test(t)) err.push("Say MALE or FEMALE (or both).");
+  if (!/\brequired\b/.test(t) && !GU.required.test(t)) err.push("Recruitment ads must say REQUIRED.");
+  if (!/\b(male|female)\b/.test(t) && !GU.gender.test(t)) err.push("Say MALE or FEMALE (or both).");
  }
  if (cat === "Property" || cat === "To let") {
-  if (!/\b(for sale|for rent|required on rent|required on sale)\b/.test(t)) err.push("Start with FOR SALE, FOR RENT, REQUIRED ON RENT or REQUIRED ON SALE.");
-  const types = PROP_TYPES.filter(v => v.some(k => new RegExp("\\b" + k + "s?\\b").test(t)));
+  if (!/\b(for sale|for rent|required on rent|required on sale)\b/.test(t) && !GU.intent.test(t)) err.push("Start with FOR SALE, FOR RENT, REQUIRED ON RENT or REQUIRED ON SALE.");
+  const types = PROP_TYPES.filter((v, i) => v.some(k => new RegExp("\\b" + k + "s?\\b").test(t)) || GU.types[i].test(t));
   if (!types.length) err.push("Mention the property type: flat, bungalow, tenement, row house, penthouse, shop, office, showroom or plot.");
   if (types.length > 1) err.push("One property per ad. Book a separate ad for each property.");
-  if (/(₹|\brs\.?\s*\d|\binr\b|\d\s*\/-|\d+\s*(lakh|lakhs|lac|lacs|crore|cr)\b|\bprice\b|\bper month\b|\/month)/.test(t)) err.push("Property ads can't carry a price. Remove the amount.");
-  if (/\b(old|new) construction\b|\ball facilities\b/.test(t)) err.push("Leave out \"old/new construction\" and \"all facilities\". Papers don't print them.");
-  if (types.some(v => v[0] === "plot")) { const m = t.match(/(\d[\d,]*)\s*(sq\.?\s*(yd|yds|yard|yards)|sqyd|sq\.?yd)/); if (!m) err.push("For a plot, give the plot area in sq. yards."); else if (+m[1].replace(/,/g,"") > 5000) err.push("Plot area must be 5,000 sq. yards or less."); }
+  if (/(₹|\brs\.?\s*\d|\binr\b|\d\s*\/-|\d+\s*(lakh|lakhs|lac|lacs|crore|cr)\b|\bprice\b|\bper month\b|\/month)/.test(t) || GU.price.test(t)) err.push("Property ads can't carry a price. Remove the amount.");
+  if (/\b(old|new) construction\b|\ball facilities\b/.test(t) || GU.build.test(t)) err.push("Leave out \"old/new construction\" and \"all facilities\". Papers don't print them.");
+  if (types.some(v => v[0] === "plot")) { const m = t.match(/(\d[\d,]*)\s*(sq\.?\s*(yd|yds|yard|yards)|sqyd|sq\.?yd)/) || (x => x && [x[0], guDigits(x[1])])(t.match(GU.yard)); if (!m) err.push("For a plot, give the plot area in sq. yards."); else if (+m[1].replace(/,/g,"") > 5000) err.push("Plot area must be 5,000 sq. yards or less."); }
  }
  if (cat === "Matrimonial") {
-  if (!/\b(matrimonial|lagna\s*vishayak|lagnavishayak)\b/.test(t)) err.push("Write MATRIMONIAL or LAGNA VISHAYAK.");
-  if (!/\b(age\s*:?\s*\d{2}|\d{2}\s*(yrs|yr|years|year)\b|\d{2}\s*\/\s*\d)/.test(t)) err.push("Give the age (for example: age 29 yrs).");
-  if (!CASTES.test(t)) err.push("Mention the caste (or write \"caste no bar\").");
+  if (!/\b(matrimonial|lagna\s*vishayak|lagnavishayak)\b/.test(t) && !GU.matri.test(t)) err.push("Write MATRIMONIAL or LAGNA VISHAYAK.");
+  if (!/\b(age\s*:?\s*\d{2}|\d{2}\s*(yrs|yr|years|year)\b|\d{2}\s*\/\s*\d)/.test(t) && !GU.age.test(t)) err.push("Give the age (for example: age 29 yrs).");
+  if (!CASTES.test(t) && !GU.caste.test(t)) err.push("Mention the caste (or write \"caste no bar\").");
  }
  if (cat === "Name change") {
-  if (!/i\s+have\s+changed\s+my\s+name\s+from\s+.+\s+to\s+.+/.test(t)) err.push("Use the format: I have changed my name from ... to ...");
-  if (!/\baddress\s*:/.test(t)) err.push("Add your address after \"Address:\".");
-  if (/all purposes|affidavit|notari[sz]ed/.test(t)) err.push("Leave out \"for all purposes\", the affidavit date and \"notarized\".");
+  if (!/i\s+have\s+changed\s+my\s+name\s+from\s+.+\s+to\s+.+/.test(t) && !GU.nc.test(t)) err.push("Use the format: I have changed my name from ... to ...");
+  if (!/\baddress\s*:/.test(t) && !GU.addr.test(t)) err.push("Add your address after \"Address:\".");
+  if (/all purposes|affidavit|notari[sz]ed/.test(t) || GU.ncBad.test(t)) err.push("Leave out \"for all purposes\", the affidavit date and \"notarized\".");
   if (/\[(old|new) name\]|\[full address\]/.test(t)) err.push("Replace the [brackets] with your details.");
  }
  return err;
@@ -290,6 +326,9 @@ console.assert(quote({paper:"Indian Express",city:"Ahmedabad",cat:"Property",typ
 console.assert(quote({paper:"Indian Express",city:"Mumbai",cat:"Obituary",type:"ct",text:"w",dates:[1]}).sub===205, "IE obituary 50% off");
 console.assert(adRules("Property","FOR RENT 2BHK flat in Bopal near BRTS, call 9825041736").length===0, "valid property ad");
 console.assert(adRules("Property","For sale flat and shop, Rs 45 lakh, new construction").length===3, "property: two types, price, construction");
+console.assert(adRules("Property","ભાડે આપવાનો છે 2BHK ફ્લેટ, સેટેલાઇટ, BRTS પાસે. સંપર્ક 9825041736").length===0, "Gujarati property ad passes");
+console.assert(adRules("Property","વેચાણ ફ્લેટ, રૂ. 45 લાખ").length===1, "Gujarati price caught");
+console.assert(adRules("Matrimonial","લગ્નવિષયક પટેલ યુવક ઉંમર 29 વર્ષ, એન્જિનિયર").length===0, "Gujarati matrimonial passes");
 console.assert(adRules("Name change","I have changed my name from Hetal Patel to Hetal Shah, Address: 12 Satellite, Ahmedabad").length===0, "valid name change");
 
 // self-checks against the rate cards (run in the browser console and by `node server.js --check`)
@@ -304,4 +343,4 @@ console.assert(quote({paper:"Times of India",city:"Mumbai",cat:"Property",type:"
 console.assert(Math.round(quote({paper:"Gujarat Samachar",city:"Ahmedabad",cat:"Business",type:"da",w:3.9,h:10,dates:[1]}).sub)===27600, "GS 10 col-cm × ₹2760");
 console.assert(quote({paper:"Navgujarat Samay",city:"Ahmedabad",cat:"Property",type:"ct",text:"w",dates:[1]})===null, "no card = on request");
 
-if (typeof module!=="undefined") module.exports = {REQUIRED_DOCS,adRules,AD_GUIDE,NAME_CHANGE_TEMPLATE,LANGS,GUJARAT,CITIES_ORDER,P,CATS,TYPES,PAGES,ENH,CUTOFF_DAYS,GST,inr,quote,quoteAll,wordCount,clsRule,minWords,boxRate,rateLabel,fromLabel};
+if (typeof module!=="undefined") module.exports = {SUBCATS,REQUIRED_DOCS,adRules,AD_GUIDE,NAME_CHANGE_TEMPLATE,LANGS,GUJARAT,CITIES_ORDER,P,CATS,TYPES,PAGES,ENH,CUTOFF_DAYS,GST,inr,quote,quoteAll,wordCount,clsRule,minWords,boxRate,rateLabel,fromLabel};

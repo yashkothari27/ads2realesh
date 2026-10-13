@@ -160,7 +160,7 @@ $("#menu").addEventListener("click",()=>$("#menu").classList.remove("open"));
 /* ---------- booking flow: Newspaper -> Compose -> Dates -> Pay ---------- */
 const STEPS = ["Newspaper","Compose","Dates","Details & pay"];
 let S, step = 0, viewMonth;
-function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",fileKey:"",docKey:"",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
+function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",fileKey:"",docKey:"",sub:"",kb:"en",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
 const minDate = ()=>{const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+CUTOFF_DAYS+(new Date().getHours()>=17?1:0)); return d;};
 const iso = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmt = s=>new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",weekday:"short"});
@@ -169,7 +169,7 @@ const saveDraft = ()=>{ if(step<4) store.set("a2r_draft",{S:{...S,file:""},step}
 
 function validate(){
  const e = {};
- if (step===0){ if(!S.cat) e.cat="Choose a category."; else if(!S.items.length) e.items="Pick a newspaper, then tick at least one edition."; }
+ if (step===0){ if(!S.cat) e.cat="Choose a category."; else if(SUBCATS[S.cat] && !S.sub) e.sub="Choose a sub-category."; else if(!S.items.length) e.items="Pick a newspaper, then tick at least one edition."; }
  if (step===1){
   if (S.type==="ct"){ if(wordCount(S.text)<3) e.text="Write your ad. It needs at least a few words."; else { const r=adRules(S.cat,S.text); if(r.length) e.text=r.join(" "); } }
   else { if(!(S.w>=2&&S.w<=33)) e.w="Width must be 2 to 33 cm."; if(!(S.h>=2&&S.h<=52)) e.h="Height must be 2 to 52 cm."; if(!S.file&&wordCount(S.text)<3) e.file="Upload your artwork, or describe the ad so our desk can design it."; }
@@ -204,7 +204,8 @@ function stepHTML(){
   return `<h3>Choose newspapers and editions</h3>
   <div class="seg" role="group" aria-label="Ad format">${Object.entries(TYPES).map(([k,t])=>`<button class="segb" aria-pressed="${S.type===k}" data-set="type" data-v="${k}"><svg class="i"><use href="#${t.ico}"/></svg>${t.n}</button>`).join("")}</div>
   <div class="r3" style="margin-top:4px">
-   <div>${F("cat","Category",`<select id="cat"><option value="">Choose category</option>${CATS.map(c=>`<option ${S.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`)}</div>
+   <div>${F("cat","Category",`<select id="cat"><option value="">Choose category</option>${CATS.map(c=>`<option ${S.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`)}
+   ${SUBCATS[S.cat]?F("sub","Sub-category",`<select id="sub"><option value="">Choose sub-category</option>${SUBCATS[S.cat].map(c=>`<option ${S.sub===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}</div>
    <div>${F("wLang","Language",`<select id="wLang"><option value="">All languages</option>${LANGS.map(l=>`<option ${S._lang===l?"selected":""}>${l}</option>`).join("")}</select>`)}</div>
    <div>${F("wCityF","City",`<select id="wCityF"><option value="">All cities</option>${CITIES.map(c=>`<option ${S._cityF===c?"selected":""}>${c}</option>`).join("")}</select>`)}</div>
   </div>
@@ -217,7 +218,8 @@ function stepHTML(){
   const guide = AD_GUIDE[S.cat==="To let"?"Property":S.cat];
   const help = guide ? `<div class="rules"><strong>${esc(S.cat)} ads must follow the newspaper's format</strong><ul>${guide.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>${S.cat==="Name change"?`<button class="btn sm" data-tpl>Use name-change format</button>`:""}</div>` : "";
   const docF = REQUIRED_DOCS[S.cat] ? F("doc",`Required document: ${esc(REQUIRED_DOCS[S.cat])}`,`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="dn">${S.doc?esc(S.doc):"Upload PDF or photo (up to 10 MB)"}</span><input id="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="sr"></label>`,"Our desk checks it before sending the notice to the newspaper.") : "";
-  if (S.type==="ct") return `<h3>Write your ad</h3>${help}${docF}
+  const kb = `<div class="seg kbsw" role="group" aria-label="Typing language"><button class="segb" data-kb="en" aria-pressed="${S.kb!=="gu"}">English</button><button class="segb" data-kb="gu" aria-pressed="${S.kb==="gu"}" lang="gu">ગુજરાતી</button></div>${S.kb==="gu"?`<p class="hint">Type in English letters and each word changes to Gujarati: makaan → મકાન, aapano → આપનો, bhaaDe → ભાડે, sampark → સંપર્ક. Use aa/ee/oo for long vowels and capital T, D, N for ટ, ડ, ણ. You can also paste Gujarati from your phone keyboard.</p>`:""}`;
+  if (S.type==="ct") return `<h3>Write your ad</h3>${help}${docF}${kb}
   ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. FOR RENT 2BHK flat, Satellite, near BRTS, semi-furnished. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
   <label class="f">Enhancements</label><div class="checks">${ENH.map(([k,n,pc])=>`<label><input type="checkbox" data-enh="${k}" ${S.enh.includes(k)?"checked":""}> ${n} <span class="muted">${enhLabel(k,pc)}</span></label>`).join("")}</div>
   <label class="f">Preview</label><div class="preview ${S.text?"":"empty"}" id="pv" style="color:#1c1917;${S.enh.includes("bold")?"font-weight:700;":""}${S.enh.includes("bg")?"background:#fde8e6;":""}${S.enh.includes("border")?"border:2px solid #1c1917;":""}">${S.enh.includes("tick")?"&#10003; ":""}${esc(S.text)||"Start typing to see your ad as it will print."}</div>`;
@@ -225,7 +227,7 @@ function stepHTML(){
   <div class="row2">${F("w","Width (cm)",`<input id="w" type="number" min="2" max="33" step="1" value="${S.w}">`,"A standard column is about 4 cm")}${F("h","Height (cm)",`<input id="h" type="number" min="2" max="52" step="1" value="${S.h}">`)}</div>
   <div class="row2">${S.type==="da"?F("page","Page",`<select id="page">${Object.entries(PAGES).map(([k,v])=>`<option value="${k}" ${S.page===k?"selected":""}>${v}</option>`).join("")}</select>`,"Front +100%, last +50%, third +25% on most papers"):"<div></div>"}<div class="checks" style="align-self:center"><label><input type="checkbox" id="color" ${S.color?"checked":""}> Colour ad</label></div></div>
   ${F("file","Artwork (JPG, PNG or PDF, up to 10 MB)",`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="fn">${S.file?esc(S.file):"Click to upload your artwork"}</span><input id="file" type="file" accept=".jpg,.jpeg,.png,.pdf" class="sr"></label>`)}
-  ${help}${docF}${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
+  ${help}${docF}${kb}${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
  case 2: { const m=viewMonth, md=minDate(); const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate(); const lead=(m.getDay()+6)%7;
   let cells=["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=>`<span class="dh">${d}</span>`).join("")+"<span></span>".repeat(lead);
   for(let d=1;d<=days;d++){const dt=new Date(m.getFullYear(),m.getMonth(),d), k=iso(dt); cells+=`<button data-date="${k}" ${dt<md?"disabled":""} aria-pressed="${S.dates.includes(k)}" aria-label="${fmt(k)}">${d}</button>`;}
@@ -236,7 +238,7 @@ function stepHTML(){
   ${S.dates.length?`<p class="sm"><b>Selected:</b> ${[...S.dates].sort().map(fmt).join(", ")}</p>`:""}`; }
  case 3: { const q=quoteAll(S); return `<h3>Review and pay</h3>
   <div class="tbl"><table><tbody>
-  <tr><th>Format</th><td>${TYPES[S.type].n} · ${esc(S.cat)}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
+  <tr><th>Format</th><td>${TYPES[S.type].n} · ${esc(S.cat)}${S.sub?" · "+esc(S.sub):""}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
   <tr><th>Editions</th><td>${S.items.map(it=>`${esc(it.paper)}, ${esc(it.city)}`).join("<br>")}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
   <tr><th>${S.type==="ct"?"Ad text":"Size"}</th><td>${S.type==="ct"?esc(S.text):`${S.w} × ${S.h} cm${S.color?", colour":""}${S.file?"<br>"+esc(S.file):""}`}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>
   ${S.doc?`<tr><th>Document</th><td>${esc(S.doc)}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>`:""}
@@ -289,14 +291,20 @@ $("#stepBox").addEventListener("click",e=>{
  const d = e.target.closest("[data-date]"); if (d){ const k=d.dataset.date; S.dates = S.dates.includes(k)?S.dates.filter(x=>x!==k):[...S.dates,k]; render(); return; }
  const m = e.target.closest("[data-mon]"); if (m){ viewMonth.setMonth(viewMonth.getMonth()+ +m.dataset.mon); render(); return; }
  const g = e.target.closest("[data-go]"); if (g){ step=+g.dataset.go; render(); return; }
+ const kbb = e.target.closest("[data-kb]"); if (kbb){ S.kb=kbb.dataset.kb; render(); $("#text")?.focus(); return; }
  if (e.target.closest("[data-tpl]")){ S.text = NAME_CHANGE_TEMPLATE; render(); const t=$("#text"); t.focus(); t.setSelectionRange(t.value.indexOf("["), t.value.indexOf("]")+1); }
 });
 $("#stepBox").addEventListener("input",e=>{
  const t=e.target, id=t.id;
  if (id) { const er=$("#e-"+id); if (er && er.textContent) { er.textContent=""; t.removeAttribute("aria-invalid"); } }
  if (id==="wLang"){S._lang=t.value; render(); return;} if (id==="wCityF"){S._cityF=t.value; render(); return;}
- if (id==="cat"){S.cat=t.value; render(); return;}
+ if (id==="cat"){S.cat=t.value; S.sub=""; render(); return;}
+ if (id==="sub"){S.sub=t.value; refreshSide(); saveDraft(); return;}
  if (t.dataset.ed){ const it={paper:S._open,city:t.dataset.ed}; S.items = t.checked?[...S.items,it]:S.items.filter(i=>key(i)!==key(it)); render(); return; }
+ if (id==="text" && S.kb==="gu" && /[\s.,;:!?)\-\/]$/.test(t.value.slice(0, t.selectionStart))){
+  const pos=t.selectionStart, before=t.value.slice(0,pos), m=before.match(/([A-Za-z]+)([\s.,;:!?)\-\/])$/);
+  if (m){ const g=toGujarati(m[1]); const nb=before.slice(0,before.length-m[0].length)+g+m[2]; t.value=nb+t.value.slice(pos); t.setSelectionRange(nb.length,nb.length); }
+ }
  if (id==="text"){ S.text=t.value; const pv=$("#pv"); if(pv){ pv.textContent=(S.enh.includes("tick")?"✓ ":"")+(S.text||"Start typing to see your ad as it will print."); pv.classList.toggle("empty",!S.text);} if($("#wc")) $("#wc").textContent=wordCount(S.text); }
  if (t.dataset.enh){ S.enh = t.checked?[...S.enh,t.dataset.enh]:S.enh.filter(x=>x!==t.dataset.enh); render(); return; }
  if (id==="w"||id==="h") S[id]=+t.value;
@@ -368,6 +376,25 @@ async function upload(input, field, labelId, emptyText){
   S[field] = f.name; S[field+"Key"] = slot.key; lbl.textContent = "Uploaded: " + f.name;
  } catch (x) { err.textContent = (x && x.message && !/fetch|network/i.test(x.message)) ? x.message : "Upload didn't go through. Check your connection and try again."; input.value=""; lbl.textContent = emptyText; }
  finally { S._uploading--; refreshSide(); saveDraft(); }
+}
+
+/* ---------- phonetic English → Gujarati (no keyboard setup needed) ---------- */
+// ponytail: simple phonetic scheme (like most Gujarati typing tools); upgrade to a dictionary-backed IME if customers need exact spellings
+const GU_V = [["aa","આ","ા"],["ai","ઐ","ૈ"],["au","ઔ","ૌ"],["ee","ઈ","ી"],["ii","ઈ","ી"],["oo","ઊ","ૂ"],["uu","ઊ","ૂ"],["ru","ઋ","ૃ"],["a","અ",""],["i","ઇ","િ"],["u","ઉ","ુ"],["e","એ","ે"],["o","ઓ","ો"],["A","આ","ા"],["I","ઈ","ી"],["U","ઊ","ૂ"]];
+const GU_C = [["ksh","ક્ષ"],["chh","છ"],["Sh","ષ"],["sh","શ"],["kh","ખ"],["gh","ઘ"],["ch","ચ"],["jh","ઝ"],["Th","ઠ"],["Dh","ઢ"],["th","થ"],["dh","ધ"],["ph","ફ"],["bh","ભ"],["jn","જ્ઞ"],["ny","ઞ"],["k","ક"],["g","ગ"],["c","ક"],["j","જ"],["T","ટ"],["D","ડ"],["N","ણ"],["t","ત"],["d","દ"],["n","ન"],["p","પ"],["f","ફ"],["b","બ"],["m","મ"],["y","ય"],["r","ર"],["l","લ"],["L","ળ"],["v","વ"],["w","વ"],["s","સ"],["h","હ"],["z","ઝ"],["q","ક"],["x","ક્સ"]];
+function toGujarati(word){
+ let out="", i=0, cons=false;
+ const match = list => list.find(([k]) => word.startsWith(k, i) || (k.length>1 && k===k.toLowerCase() && word.slice(i, i+k.length).toLowerCase()===k && !/[A-Z]/.test(word.slice(i, i+k.length).slice(1))));
+ while (i < word.length) {
+  // anusvara: capital M, or n/m after a vowel and before a consonant of the same family (sampark → સંપર્ક)
+  if (word[i]==="M" || (i>0 && !cons && ((word[i]==="n" && /[kgcjtdTD]/.test(word[i+1]||"")) || (word[i]==="m" && /[pb]/.test(word[i+1]||""))))) { out+="ં"; i++; continue; }
+  const v = GU_V.find(([k]) => word.startsWith(k, i)) || GU_V.find(([k]) => k.length>1 && word.slice(i,i+k.length).toLowerCase()===k);
+  if (v) { out += cons ? v[2] : v[1]; cons=false; i+=v[0].length; continue; }
+  const c = GU_C.find(([k]) => word.startsWith(k, i)) || GU_C.find(([k]) => word.slice(i,i+k.length).toLowerCase()===k.toLowerCase() && k===k.toLowerCase());
+  if (c) { if (cons) out += "્"; out += c[1]; cons=true; i+=c[0].length; continue; }
+  out += word[i]; cons=false; i++;
+ }
+ return out;
 }
 function closeWizard(){ $("#wiz").close(); }
 $("#wiz").addEventListener("close",()=>history.replaceState(null,"",location.pathname+location.search));

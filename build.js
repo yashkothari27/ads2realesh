@@ -196,6 +196,26 @@ const GUIDE = {
   "Lost documents": ["Mention the document type, number if known, and where it was lost.", "Banks and registries often ask for the notice in two papers.", "Attach the police complaint number if you have one.", "Keep the clipping for your application."],
   "Tenders": ["Tender notices are charged at a special rate.", "Check the publication date against the tender's opening date.", "Most departments require both an English and a regional paper.", "Send the exact approved text. We do not edit tender wording."],
 };
+/* ---- refund policy (business terms set by ad2release; have a lawyer review before launch) ---- */
+const POL = (h, items) => `<h2 style="font-size:22px;margin-top:32px">${h}</h2>` + (Array.isArray(items) ? `<ul class="ticks" style="display:grid;gap:8px">${items.map(i => `<li><svg class="i"><use href="#i-check"/></svg><span>${i}</span></li>`).join("")}</ul>` : `<p class="muted">${items}</p>`);
+page("refund-policy.html", {
+  title: "Refund Policy | ad2release",
+  desc: "When you can cancel a newspaper ad booking with ad2release, when you get a refund, and how long it takes.",
+  body: hero([["Home", "index.html"], ["Refund policy"]], "Refund policy", "How cancellations and refunds work for ads booked through ad2release. Last updated 13 October 2026.", "")
+   + `<section><div class="wrap" style="max-width:820px">`
+   + POL("Before you book", "We book your ad with the newspaper on your behalf. Once the newspaper has received and processed it, the paper treats it as final, so it can no longer be changed, cancelled or refunded except in the cases below.")
+   + POL("Cancelling or changing a booking", ["You can cancel or change a booking only until we have sent it to the newspaper.", "Cancellations you ask for carry a 15% cancellation charge on the booking amount.", "Email us with your booking ID as early as possible. Changes to size, edition or date can change the price."])
+   + POL("You get the full amount back when", ["We or the newspaper turn down your ad before it is printed, for a reason that is not yours.", "Your ad doesn't appear because of our mistake or the newspaper's, and you don't want it moved to the next available date."])
+   + POL("You get the amount back less the 15% charge when", ["You cancel before the newspaper processes the booking.", "The ad was booked in the wrong category and you choose not to move it and pay any difference.", "The ad is turned down because its content breaks our guidelines or the newspaper's rules.", "We can't process the ad because the required documents were not provided."])
+   + POL("No refund is possible when", ["The newspaper has already processed or printed the ad.", "The ad was printed exactly as you submitted or approved it, including any mistake in the text, details or dates you gave.", "The documents you supplied were forged.", "You change your mind after the newspaper has processed the booking."])
+   + POL("If your ad misses its date", ["We work to print your ad on the date you chose. If that isn't possible, we move it to the next available date and tell you.", "If you don't want the new date, we refund what you paid for that ad.", "A refund of the amount paid is the only remedy; no compensation, damages or interest is payable for a missed date."])
+   + POL("Mistakes in a printed ad", ["Tell us within 3 days of the publishing date, with your booking ID and a copy of the ad.", "If the mistake is ours or the newspaper's and it changes the meaning, we either reprint the ad free or refund that ad, at our choice.", "Small differences in font, spacing, colour or placement that don't change the meaning are not treated as mistakes.", "We can't take responsibility for errors in text you wrote or approved."])
+   + POL("How to ask for a refund", ["Email book@ad2release.com with your booking ID, the reason, your payment receipt and the booking confirmation.", "We check the request against this policy and reply by email, including whether the 15% charge applies."])
+   + POL("When the money reaches you", ["Approved refunds go back to the original payment method within 7 to 10 working days. Your bank may take a little longer to show it.", "Full refunds are paid without any deduction.", "For cancellations you ask for, payment-gateway fees that are not returned to us may be deducted.", "Failed or duplicate payments are reversed on the payment gateway's and your bank's timelines."])
+   + POL("Contact", "Email book@ad2release.com or call +91 90000 00000. Our desk is open Monday to Saturday, 10 am to 7 pm.")
+   + `</div></section>`,
+});
+
 /* ---- city and city x category pages ---- */
 for (const city of CITIES) {
   const papers = P.filter(p => p.cities.includes(city)), cs = slug(city);

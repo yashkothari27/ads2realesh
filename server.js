@@ -5,7 +5,7 @@
 //   GCS_BUCKET=ad2release-uploads GCS_CLIENT_EMAIL=...@....iam.gserviceaccount.com GCS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
 //   (or GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json). Without them, uploads are saved to data/uploads.
 const http = require("node:http"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
-const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules, REQUIRED_DOCS } = require("./site/pricing.js");
+const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules, REQUIRED_DOCS, SUBCATS } = require("./site/pricing.js");
 
 const PORT = +process.env.PORT || 3000;
 const KEY_ID = process.env.RAZORPAY_KEY_ID || "", KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "", HOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
@@ -54,6 +54,7 @@ function checkBooking(b) {
   if (!b || typeof b !== "object") err("Invalid booking.");
   if (!TYPES[b.type]) err("Unknown ad format.");
   if (!CATS.includes(b.cat)) err("Unknown category.");
+  if (SUBCATS[b.cat] && !SUBCATS[b.cat].includes(b.sub)) err("Choose a sub-category.");
   if (!Array.isArray(b.items) || !b.items.length || b.items.length > 50) err("Choose at least one edition.");
   for (const it of b.items) { const p = P.find(x => x.name === it?.paper); if (!p || !p.cities.includes(it.city)) err("Unknown newspaper or edition."); }
   const min = new Date(); min.setHours(0, 0, 0, 0); min.setDate(min.getDate() + CUTOFF_DAYS + (new Date().getHours() >= 17 ? 1 : 0));
@@ -68,7 +69,7 @@ function checkBooking(b) {
   if (String(b.name || "").trim().length < 2) err("Name is required.");
   if (!/^[6-9]\d{9}$/.test(b.phone)) err("Invalid mobile number.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) err("Invalid email.");
-  const clean = { type: b.type, cat: b.cat, items: b.items.map(({ paper, city }) => ({ paper, city })), dates: [...new Set(b.dates)].sort(), text,
+  const clean = { type: b.type, cat: b.cat, sub: SUBCATS[b.cat] ? b.sub : "", items: b.items.map(({ paper, city }) => ({ paper, city })), dates: [...new Set(b.dates)].sort(), text,
     enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "web", "border"].includes(x)), w, h, color: !!b.color, page: PAGES[b.page] ? b.page : "inside", file: String(b.file || "").slice(0, 200), doc: String(b.doc || "").slice(0, 200),
     fileKey: KEY_RE.test(b.fileKey || "") ? b.fileKey : "", docKey: KEY_RE.test(b.docKey || "") ? b.docKey : "",
     name: String(b.name).trim().slice(0, 100), phone: b.phone, email: String(b.email).slice(0, 200), gstin: String(b.gstin || "").slice(0, 15) };
@@ -163,7 +164,7 @@ const server = http.createServer(async (req, res) => {
 if (process.argv[2] === "--check") {
   const assert = require("node:assert");
   const d = new Date(); d.setDate(d.getDate() + 5); const day = d.toISOString().slice(0, 10);
-  const b = checkBooking({ type: "ct", cat: "Property", items: [{ paper: "Sandesh", city: "Ahmedabad" }], dates: [day], text: "FOR RENT flat in Bopal near BRTS call 9825041736 w w w", name: "Test User", phone: "9876543210", email: "a@b.in" });
+  const b = checkBooking({ type: "ct", cat: "Property", sub: "For rent", items: [{ paper: "Sandesh", city: "Ahmedabad" }], dates: [day], text: "FOR RENT flat in Bopal near BRTS call 9825041736 w w w", name: "Test User", phone: "9876543210", email: "a@b.in" });
   assert.equal(b.amount_paise, 31500, "server price must match the page (12 words × ₹25 + 5% GST)");
   const r = checkBooking({ ...b, items: [{ paper: "Navgujarat Samay", city: "Ahmedabad" }] });
   assert.ok(r.quote && r.amount_paise === 0, "no rate card = quote request, not a charge");
