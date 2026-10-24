@@ -479,3 +479,10 @@ input[type=checkbox],input[type=radio]{width:18px;height:18px;accent-color:var(-
 .catpath span:nth-child(2){flex:1}
 @media (max-width:860px){.catstep{grid-template-columns:1fr}.cpanel{position:static}.cpanel.active{order:-1}.ctiles{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:420px){.ctiles{grid-template-columns:repeat(2,1fr)}.ctile{min-height:96px}}
+
+.sugg{display:block;border:1px solid var(--ink);border-radius:12px;padding:10px 12px;margin:8px 0 4px;background:var(--card)}
+.sg-head{display:flex;justify-content:space-between;gap:8px;font:600 12px Outfit;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.sg-head #sgTyped{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
+.sg-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px;min-height:40px;align-items:center}
+.sg-row .chip{min-height:40px;padding:0 16px;font:500 17px "Noto Sans Gujarati",Outfit,sans-serif}
+.sg-row .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}

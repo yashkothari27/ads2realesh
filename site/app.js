@@ -253,9 +253,10 @@ function stepHTML(){
   const help = guide ? `<div class="rules"><strong>${esc(S.cat)} ads must follow the newspaper's format</strong><ul>${guide.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>${S.cat==="Name change"?`<button class="btn sm" data-tpl>Use name-change format</button>`:""}</div>` : "";
   const docF = REQUIRED_DOCS[S.cat] ? F("doc",`Required document: ${esc(REQUIRED_DOCS[S.cat])}`,`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="dn">${S.doc?esc(S.doc):"Upload PDF or photo (up to 10 MB)"}</span><input id="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="sr"></label>`,"Our desk checks it before sending the notice to the newspaper.") : "";
   const kb = `<div class="seg kbsw" role="group" aria-label="Typing language"><button class="segb" data-kb="en" aria-pressed="${S.kb!=="gu"}">English</button><button class="segb" data-kb="gu" aria-pressed="${S.kb==="gu"}" lang="gu">ગુજરાતી</button></div><button class="btn sm ghost" data-translate type="button">Translate English text to Gujarati</button><span class="hint" id="trMsg" role="status"></span>
-  ${S.kb==="gu"?`<div class="sugg" id="sugg" aria-label="Spelling suggestions"></div><p class="hint">Type in English letters and each word changes to Gujarati, the way Google's Gujarati keyboard does: makan → મકાન, lagna → લગ્ન, sampark → સંપર્ક. Tap a suggestion to pick another spelling. You can also paste Gujarati from your phone keyboard.</p>`:""}`;
+  ${S.kb==="gu"?`<p class="hint">Type in English letters and each word changes to Gujarati, the way Google's Gujarati keyboard does: makan → મકાન, lagna → લગ્ન, sampark → સંપર્ક. Tap a suggestion to pick another spelling. You can also paste Gujarati from your phone keyboard.</p>`:""}`;
   if (S.type==="ct") return `<h3>Write your ad</h3>${help}${docF}${kb}
   ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. FOR RENT 2BHK flat, Satellite, near BRTS, semi-furnished. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
+  ${S.kb==="gu"?`<div class="sugg" id="sugg" aria-live="polite"><div class="sg-head"><span>Change to · ગુજરાતી</span><span id="sgTyped"></span></div><div class="sg-row" id="sgRow"><span class="hint">Start typing a word in English letters</span></div><div class="hint">Tap a spelling to use it · keep typing to move on</div></div>`:""}
   <label class="f">Enhancements</label><div class="checks">${ENH.map(([k,n,pc])=>`<label><input type="checkbox" data-enh="${k}" ${S.enh.includes(k)?"checked":""}> ${n} <span class="muted">${enhLabel(k,pc)}</span></label>`).join("")}</div>
   <label class="f">Preview</label><div class="preview ${S.text?"":"empty"}" id="pv" style="color:#1c1917;${S.enh.includes("bold")?"font-weight:700;":""}${S.enh.includes("bg")?"background:#fde8e6;":""}${S.enh.includes("border")?"border:2px solid #1c1917;":""}">${S.enh.includes("tick")?"&#10003; ":""}${esc(S.text)||"Start typing to see your ad as it will print."}</div>`;
   return `<h3>Size and artwork</h3>
@@ -304,6 +305,7 @@ function render(){
  $("#selbar").innerHTML = fin||step===0?"":`<span>${S.items.length?`<b>${S.items.length}</b> edition${S.items.length>1?"s":""} selected`:"No edition selected yet"}</span><span>Total / insertion <b>${!q?"-":q.req&&!q.per?"On request":inr(q.perGst)+(q.req?" + quote":"")}</b></span>`;
  const box=$("#stepBox"); box.classList.toggle("enter", box.dataset.step!==String(step)); box.dataset.step=step; box.innerHTML = stepHTML(); $("#side").innerHTML = sideHTML();
  $("#side").style.display = fin||step===0?"none":"";
+ { const sg=$("#sugg"), tx=$("#text"); if (sg && tx && tx.parentNode) tx.after(sg); } // word bar right under the text box
  $(".wz-body").classList.toggle("solo",fin||step===0);
  $("#back").style.visibility = step===0||fin?"hidden":"visible";
  $("#next").style.display = step===5?"none":"";
@@ -333,7 +335,7 @@ $("#stepBox").addEventListener("click",e=>{
   if ((!SUBCATS[c]||sb) && (!CHILDCATS[c+"|"+sb]||k)) setTimeout(()=>go(1),150); return; }
  if (e.target.closest("[data-back-sub]")){ S.sub=""; S.child=""; render(); return; }
  if (e.target.closest("[data-clear-cat]")){ S.cat=""; S.sub=""; S.child=""; render(); return; }
- const sg = e.target.closest("[data-sg]"); if (sg){ swapWord(+sg.dataset.at, sg.dataset.cur, sg.dataset.sg); return; }
+ const sg = e.target.closest("[data-sg]"); if (sg){ swapWord(+sg.dataset.at, sg.dataset.cur, sg.dataset.sg, sg.dataset.latin==="1"); return; }
  if (e.target.closest("[data-translate]")){ translateAd(); return; }
  const kbb = e.target.closest("[data-kb]"); if (kbb){ S.kb=kbb.dataset.kb; render(); $("#text")?.focus(); return; }
  if (e.target.closest("[data-tpl]")){ S.text = NAME_CHANGE_TEMPLATE; render(); const t=$("#text"); t.focus(); t.setSelectionRange(t.value.indexOf("["), t.value.indexOf("]")+1); }
@@ -349,8 +351,10 @@ $("#stepBox").addEventListener("input",e=>{
  if (t.dataset.ed){ const it={paper:S._open,city:t.dataset.ed}; S.items = t.checked?[...S.items,it]:S.items.filter(i=>key(i)!==key(it)); render(); return; }
  if (id==="text" && S.kb==="gu" && /[\s.,;:!?)\-\/]$/.test(t.value.slice(0, t.selectionStart))){
   const pos=t.selectionStart, before=t.value.slice(0,pos), m=before.match(/([A-Za-z]+)([\s.,;:!?)\-\/])$/);
-  if (m){ const g=toGujarati(m[1]), start=before.length-m[0].length; const nb=before.slice(0,start)+g+m[2]; t.value=nb+t.value.slice(pos); t.setSelectionRange(nb.length,nb.length); googleWord(t, m[1], g, start); }
+  if (m){ const known=GCACHE.get(m[1]), g=(known&&known[0])||toGujarati(m[1]), start=before.length-m[0].length; const nb=before.slice(0,start)+g+m[2]; t.value=nb+t.value.slice(pos); t.setSelectionRange(nb.length,nb.length);
+   if (known) showSugg(m[1], known, start, g); else googleWord(t, m[1], g, start); }
  }
+ if (id==="text" && S.kb==="gu") liveSugg(t);
  if (id==="text"){ S.text=t.value; const pv=$("#pv"); if(pv){ pv.textContent=(S.enh.includes("tick")?"✓ ":"")+(S.text||"Start typing to see your ad as it will print."); pv.classList.toggle("empty",!S.text);} if($("#wc")) $("#wc").textContent=wordCount(S.text); }
  if (t.dataset.enh){ S.enh = t.checked?[...S.enh,t.dataset.enh]:S.enh.filter(x=>x!==t.dataset.enh); render(); return; }
  if (id==="w"||id==="h") S[id]=+t.value;
@@ -425,12 +429,40 @@ async function upload(input, field, labelId, emptyText){
 }
 
 
+
+/* live word bar: suggestions for the word being typed, before the space */
+const GCACHE = new Map(); let sgTimer = 0;
+async function fetchSugg(word){
+ if (GCACHE.has(word)) return GCACHE.get(word);
+ if (location.protocol==="file:") return [toGujarati(word)];
+ try { const { options } = await api("/api/transliterate", { word }); const o = options && options.length ? options : [toGujarati(word)]; GCACHE.set(word, o); return o; }
+ catch { return [toGujarati(word)]; }
+}
+function liveSugg(t){
+ const before = t.value.slice(0, t.selectionStart), m = before.match(/([A-Za-z]+)$/);
+ clearTimeout(sgTimer);
+ if (!m) return;
+ const word = m[1], start = before.length - word.length;
+ sgTimer = setTimeout(async () => {
+  const opts = await fetchSugg(word);
+  // still typing the same word?
+  const nb = t.value.slice(0, t.selectionStart);
+  if (nb.endsWith(word) && !/[A-Za-z]/.test(nb.slice(-word.length-1, -word.length))) showSugg(word, opts, start, null);
+ }, 120);
+}
+// cur = the Gujarati already in the text (after space), or null while the English word is still being typed
+function showSugg(latin, opts, at, cur){
+ const row = $("#sgRow"), typed = $("#sgTyped"); if (!row) return;
+ typed.textContent = `you typed "${latin}"`;
+ row.innerHTML = opts.slice(0,5).map((o,i)=>`<button type="button" class="chip${(cur?o===cur:i===0)?" on":""}" data-sg="${esc(o)}" data-at="${at}" data-cur="${esc(cur||latin)}" data-latin="${cur?"":"1"}" lang="gu">${esc(o)}</button>`).join("");
+}
+
 /* ---------- Google: word spelling while typing, and whole-ad translation (both proxied by server.js) ---------- */
 // put Google's best spelling in place of the quick local guess, and offer the alternatives as chips
 async function googleWord(t, latin, guess, at){
  if (location.protocol==="file:") return;
  try {
-  const { options } = await api("/api/transliterate", { word: latin });
+  const options = await fetchSugg(latin);
   if (!options || !options.length) return;
   if (t.value.slice(at, at+guess.length) === guess && options[0] !== guess) {
    const caret = t.selectionStart, d = options[0].length - guess.length;
@@ -438,14 +470,15 @@ async function googleWord(t, latin, guess, at){
    t.setSelectionRange(caret + (caret > at ? d : 0), caret + (caret > at ? d : 0));
    t.dispatchEvent(new Event("input",{bubbles:true}));
   }
-  const box = $("#sugg"); if (box) box.innerHTML = options.map(o=>`<button type="button" class="chip" data-sg="${esc(o)}" data-at="${at}" data-cur="${esc(options[0])}" lang="gu">${esc(o)}</button>`).join("");
+  showSugg(latin, options, at, options[0]);
  } catch { /* keep the local spelling */ }
 }
-function swapWord(at, cur, pick){
+function swapWord(at, cur, pick, latin){
  const t=$("#text"); if (!t || t.value.slice(at, at+cur.length) !== cur) return;
+ if (latin) { const rest = t.value.slice(at+cur.length); t.value = t.value.slice(0,at) + pick + " " + rest.replace(/^ /,""); const c = at + pick.length + 1; t.setSelectionRange(c,c); t.focus(); t.dispatchEvent(new Event("input",{bubbles:true})); $("#sgRow").innerHTML = `<span class="hint">Used ${esc(pick)}. Keep typing.</span>`; return; }
  t.value = t.value.slice(0,at) + pick + t.value.slice(at+cur.length);
  t.dispatchEvent(new Event("input",{bubbles:true}));
- $$("#sugg [data-sg]").forEach(b=>{ b.dataset.cur = pick; b.setAttribute("aria-pressed", b.dataset.sg===pick); });
+ $$("#sugg [data-sg]").forEach(b=>{ b.dataset.cur = pick; b.classList.toggle("on", b.dataset.sg===pick); });
  t.focus();
 }
 let lastEnglish = "";
