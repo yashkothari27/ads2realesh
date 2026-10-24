@@ -390,7 +390,7 @@ window.A2R_T = {
 "Typing language":["टाइपिंग भाषा", "ટાઇપિંગ ભાષા"],
 "Type in English letters and each word changes to Gujarati: makaan → મકાન, aapano → આપનો, bhaaDe → ભાડે, sampark → સંપર્ક. Use aa/ee/oo for long vowels and capital T, D, N for ટ, ડ, ણ. You can also paste Gujarati from your phone keyboard.":["अंग्रेज़ी अक्षरों में टाइप करें, हर शब्द गुजराती में बदल जाएगा: makaan → મકાન, aapano → આપનો, bhaaDe → ભાડે, sampark → સંપર્ક। लंबी मात्रा के लिए aa/ee/oo और ટ, ડ, ણ के लिए बड़े T, D, N लिखें। आप फ़ोन के गुजराती कीबोर्ड से पेस्ट भी कर सकते हैं।", "અંગ્રેજી અક્ષરોમાં ટાઇપ કરો, દરેક શબ્દ ગુજરાતીમાં બદલાઈ જશે: makaan → મકાન, aapano → આપનો, bhaaDe → ભાડે, sampark → સંપર્ક. લાંબા સ્વર માટે aa/ee/oo અને ટ, ડ, ણ માટે મોટા T, D, N લખો. તમે ફોનના ગુજરાતી કીબોર્ડથી પેસ્ટ પણ કરી શકો છો."],
 "Refund policy":["रिफ़ंड नीति", "રિફંડ નીતિ"],
-"Sub-child category (optional)":["उप-उप श्रेणी (वैकल्पिक)", "પેટા-પેટા કેટેગરી (વૈકલ્પિક)"],
+"Sub-child category":["उप-उप श्रेणी (वैकल्पिक)", "પેટા-પેટા કેટેગરી (વૈકલ્પિક)"],
 "Choose sub-child category":["उप-उप श्रेणी चुनें", "પેટા-પેટા કેટેગરી પસંદ કરો"],
 "Flat":["फ़्लैट", "ફ્લેટ"],
 "Bungalow":["बंगला", "બંગલો"],
@@ -426,6 +426,7 @@ window.A2R_T = {
 "Domestic":["देश में", "દેશમાં"],
 "International":["अंतरराष्ट्रीय", "આંતરરાષ્ટ્રીય"],
 "Pilgrimage":["तीर्थ यात्रा", "તીર્થયાત્રા"],
+"Choose a sub-child category.":["उप-उप श्रेणी चुनें।","પેટા-પેટા કેટેગરી પસંદ કરો."],
 // placeholders
 "e.g. A2R-48213":["जैसे A2R-48213","દા.ત. A2R-48213"],"10-digit mobile":["10 अंकों का मोबाइल","10 અંકનો મોબાઇલ"],
 "Headline, details, contact, and any logo or colours you want":["शीर्षक, विवरण, संपर्क, और कोई लोगो या रंग जो आप चाहें","મથાળું, વિગતો, સંપર્ક, અને કોઈ લોગો કે રંગ જે તમે ઇચ્છો"],

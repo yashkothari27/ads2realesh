@@ -55,6 +55,7 @@ function checkBooking(b) {
   if (!TYPES[b.type]) err("Unknown ad format.");
   if (!CATS.includes(b.cat)) err("Unknown category.");
   if (SUBCATS[b.cat] && !SUBCATS[b.cat].includes(b.sub)) err("Choose a sub-category.");
+  if (CHILDCATS[b.cat + "|" + b.sub] && !CHILDCATS[b.cat + "|" + b.sub].includes(b.child)) err("Choose a sub-child category.");
   if (!Array.isArray(b.items) || !b.items.length || b.items.length > 50) err("Choose at least one edition.");
   for (const it of b.items) { const p = P.find(x => x.name === it?.paper); if (!p || !p.cities.includes(it.city)) err("Unknown newspaper or edition."); }
   const min = new Date(); min.setHours(0, 0, 0, 0); min.setDate(min.getDate() + CUTOFF_DAYS + (new Date().getHours() >= 17 ? 1 : 0));
@@ -164,7 +165,7 @@ const server = http.createServer(async (req, res) => {
 if (process.argv[2] === "--check") {
   const assert = require("node:assert");
   const d = new Date(); d.setDate(d.getDate() + 5); const day = d.toISOString().slice(0, 10);
-  const b = checkBooking({ type: "ct", cat: "Property", sub: "For rent", items: [{ paper: "Sandesh", city: "Ahmedabad" }], dates: [day], text: "FOR RENT flat in Bopal near BRTS call 9825041736 w w w", name: "Test User", phone: "9876543210", email: "a@b.in" });
+  const b = checkBooking({ type: "ct", cat: "Property", sub: "For rent", child: "Flat", items: [{ paper: "Sandesh", city: "Ahmedabad" }], dates: [day], text: "FOR RENT flat in Bopal near BRTS call 9825041736 w w w", name: "Test User", phone: "9876543210", email: "a@b.in" });
   assert.equal(b.amount_paise, 31500, "server price must match the page (12 words × ₹25 + 5% GST)");
   const r = checkBooking({ ...b, items: [{ paper: "Navgujarat Samay", city: "Ahmedabad" }] });
   assert.ok(r.quote && r.amount_paise === 0, "no rate card = quote request, not a charge");

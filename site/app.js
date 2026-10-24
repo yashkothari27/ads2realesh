@@ -169,7 +169,7 @@ const saveDraft = ()=>{ if(step<4) store.set("a2r_draft",{S:{...S,file:""},step}
 
 function validate(){
  const e = {};
- if (step===0){ if(!S.cat) e.cat="Choose a category."; else if(SUBCATS[S.cat] && !S.sub) e.sub="Choose a sub-category."; else if(!S.items.length) e.items="Pick a newspaper, then tick at least one edition."; }
+ if (step===0){ if(!S.cat) e.cat="Choose a category."; else if(SUBCATS[S.cat] && !S.sub) e.sub="Choose a sub-category."; else if(CHILDCATS[S.cat+"|"+S.sub] && !S.child) e.child="Choose a sub-child category."; else if(!S.items.length) e.items="Pick a newspaper, then tick at least one edition."; }
  if (step===1){
   if (S.type==="ct"){ if(wordCount(S.text)<3) e.text="Write your ad. It needs at least a few words."; else { const r=adRules(S.cat,S.text); if(r.length) e.text=r.join(" "); } }
   else { if(!(S.w>=2&&S.w<=33)) e.w="Width must be 2 to 33 cm."; if(!(S.h>=2&&S.h<=52)) e.h="Height must be 2 to 52 cm."; if(!S.file&&wordCount(S.text)<3) e.file="Upload your artwork, or describe the ad so our desk can design it."; }
@@ -206,7 +206,7 @@ function stepHTML(){
   <div class="r3" style="margin-top:4px">
    <div>${F("cat","Category",`<select id="cat"><option value="">Choose category</option>${CATS.map(c=>`<option ${S.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`)}
    ${SUBCATS[S.cat]?F("sub","Sub-category",`<select id="sub"><option value="">Choose sub-category</option>${SUBCATS[S.cat].map(c=>`<option ${S.sub===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}
-   ${CHILDCATS[S.cat+"|"+S.sub]?F("child","Sub-child category (optional)",`<select id="child"><option value="">Choose sub-child category</option>${CHILDCATS[S.cat+"|"+S.sub].map(c=>`<option ${S.child===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}</div>
+   ${CHILDCATS[S.cat+"|"+S.sub]?F("child","Sub-child category",`<select id="child"><option value="">Choose sub-child category</option>${CHILDCATS[S.cat+"|"+S.sub].map(c=>`<option ${S.child===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}</div>
    <div>${F("wLang","Language",`<select id="wLang"><option value="">All languages</option>${LANGS.map(l=>`<option ${S._lang===l?"selected":""}>${l}</option>`).join("")}</select>`)}</div>
    <div>${F("wCityF","City",`<select id="wCityF"><option value="">All cities</option>${CITIES.map(c=>`<option ${S._cityF===c?"selected":""}>${c}</option>`).join("")}</select>`)}</div>
   </div>
