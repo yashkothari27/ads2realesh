@@ -1,4 +1,4 @@
-const CAT_ICON = {"Name change": "c-0", "Matrimonial": "c-1", "Property": "c-2", "Recruitment": "c-3", "Obituary": "c-4", "Remembrance": "c-5", "Public notice": "c-6", "Court notice": "c-7", "Lost and found": "c-8", "Lost documents": "c-9", "Lost share certificate": "c-10", "Business": "c-11", "Personal and greetings": "c-12", "Vehicles": "c-13", "Education": "c-14", "Travel": "c-15", "To let": "c-16", "Tenders": "c-17", "Astrology": "c-18", "Retail": "c-19", "Services": "c-20", "Marriage bureau": "c-21", "Situation wanted": "c-22", "Announcement": "c-23", "Computers": "c-24", "Wedding services": "c-25"};
+const CAT_ICON = {"Title clear notice": "c-26", "Finance and loans": "c-27", "Medical": "c-28", "Name change": "c-0", "Matrimonial": "c-1", "Property": "c-2", "Recruitment": "c-3", "Obituary": "c-4", "Remembrance": "c-5", "Public notice": "c-6", "Court notice": "c-7", "Lost and found": "c-8", "Lost documents": "c-9", "Lost share certificate": "c-10", "Business": "c-11", "Personal and greetings": "c-12", "Vehicles": "c-13", "Education": "c-14", "Travel": "c-15", "To let": "c-16", "Tenders": "c-17", "Astrology": "c-18", "Retail": "c-19", "Services": "c-20", "Marriage bureau": "c-21", "Situation wanted": "c-22", "Announcement": "c-23", "Computers": "c-24", "Wedding services": "c-25"};
 // ponytail: shared by every page; a missing section resolves to a detached dummy so its init is a no-op
 const NIL = ()=>document.createElement("div");
 const $ = (s,r=document)=>r.querySelector(s)||NIL(), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
@@ -12,10 +12,13 @@ const store = { get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch
 $("#yr").textContent = new Date().getFullYear();
 const opt = (v,t=v)=>new Option(t,v);
 $("#strip").innerHTML = P.slice(0,14).map(p=>`<a href="#" data-paper="${esc(p.name)}">${esc(p.name)}</a>`).join("");
+// colour per category (hue 0-360): icon and its soft tile background
+const CAT_HUE = {"Matrimonial":330,"Name change":262,"Property":28,"Recruitment":212,"Obituary":220,"Remembrance":275,"Public notice":45,"Court notice":200,"Title clear notice":168,"Lost and found":190,"Lost documents":15,"Lost share certificate":235,"Business":145,"Personal and greetings":315,"Vehicles":8,"Education":250,"Travel":180,"To let":38,"Tenders":95,"Astrology":285,"Retail":350,"Services":160,"Marriage bureau":340,"Situation wanted":205,"Announcement":52,"Computers":225,"Wedding services":300,"Finance and loans":130,"Medical":0};
+const hueOf = c => CAT_HUE[c] ?? 210;
 // 12 most-booked Gujarat categories first; the rest open with "All categories"
 const POPULAR = ["Matrimonial","Name change","Property","Recruitment","Obituary","Public notice","Lost documents","To let","Business","Education","Vehicles","Announcement"];
 const CAT_SORTED = [...POPULAR, ...CATS.filter(c=>!POPULAR.includes(c))];
-$("#cats").innerHTML = CAT_SORTED.map((c,i)=>`<button class="cat" data-cat="${esc(c)}" ${i>=12?"data-extra hidden":""}><span class="cico"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("");
+$("#cats").innerHTML = CAT_SORTED.map((c,i)=>`<button class="cat" data-cat="${esc(c)}" ${i>=12?"data-extra hidden":""}><span class="cico" style="--h:${hueOf(c)}"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("");
 $("#catMore").textContent=`All ${CATS.length} categories`;
 $("#catMore").addEventListener("click",e=>{ const open=e.currentTarget.getAttribute("aria-expanded")!=="true"; $$("#cats [data-extra]").forEach(b=>b.hidden=!open); e.currentTarget.setAttribute("aria-expanded",open); e.currentTarget.textContent=open?"Show fewer":`All ${CATS.length} categories`; });
 $("#fCats").innerHTML = CATS.slice(0,7).map(c=>`<a href="#" data-cat="${esc(c)}">${esc(c)}</a>`).join("");
@@ -227,7 +230,7 @@ function stepHTML(){
   return `<h3>What do you want to announce?</h3>
   <p class="err" id="e-cat" role="alert"></p>
   <div class="catstep">
-   <div class="ctiles" role="group" aria-label="Categories">${CAT_SORTED.map(c=>`<button class="ctile" data-pickcat="${esc(c)}" aria-pressed="${S.cat===c}"><span class="cico"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("")}</div>
+   <div class="ctiles" role="group" aria-label="Categories">${CAT_SORTED.map(c=>`<button class="ctile" data-pickcat="${esc(c)}" aria-pressed="${S.cat===c}"><span class="cico" style="--h:${hueOf(c)}"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("")}</div>
    <div class="cpanel${S.cat||q?" active":""}">
     <label class="sr" for="catQ">Search sub-categories</label>
     <div class="csearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="catQ" type="search" placeholder="Search: flat, driver, besnu, name change..." value="${esc(S._q||"")}" autocomplete="off"></div>
@@ -239,7 +242,7 @@ function stepHTML(){
   return `<h3>Choose newspapers and editions</h3>
   <div class="seg" role="group" aria-label="Ad format">${Object.entries(TYPES).map(([k,t])=>`<button class="segb" aria-pressed="${S.type===k}" data-set="type" data-v="${k}"><svg class="i"><use href="#${t.ico}"/></svg>${t.n}</button>`).join("")}</div>
   <div class="r3" style="margin-top:4px">
-   <div class="catpath" style="grid-column:1/-1"><span class="cico"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[S.cat]||"i-tag"}"/></svg></span><span><b>${esc(S.cat)}</b>${S.sub?` › ${esc(S.sub)}`:""}${S.child?` › ${esc(S.child)}`:""}</span><button class="btn sm ghost" data-go="0">Change</button></div>
+   <div class="catpath" style="grid-column:1/-1"><span class="cico" style="--h:${hueOf(S.cat)}"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[S.cat]||"i-tag"}"/></svg></span><span><b>${esc(S.cat)}</b>${S.sub?` › ${esc(S.sub)}`:""}${S.child?` › ${esc(S.child)}`:""}</span><button class="btn sm ghost" data-go="0">Change</button></div>
    <div>${F("wLang","Language",`<select id="wLang"><option value="">All languages</option>${LANGS.map(l=>`<option ${S._lang===l?"selected":""}>${l}</option>`).join("")}</select>`)}</div>
    <div>${F("wCityF","City",`<select id="wCityF"><option value="">All cities</option>${CITIES.map(c=>`<option ${S._cityF===c?"selected":""}>${c}</option>`).join("")}</select>`)}</div>
   </div>

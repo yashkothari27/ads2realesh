@@ -486,3 +486,24 @@ input[type=checkbox],input[type=radio]{width:18px;height:18px;accent-color:var(-
 .sg-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px;min-height:40px;align-items:center}
 .sg-row .chip{min-height:40px;padding:0 16px;font:500 17px "Noto Sans Gujarati",Outfit,sans-serif}
 .sg-row .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* ---------- colourful category icons (one hue each); red is kept for actions ---------- */
+.cico{background:hsl(var(--h,210) 90% 94%)!important;color:hsl(var(--h,210) 62% 38%)!important}
+.cat:hover .cico,.ctile:hover .cico{background:hsl(var(--h,210) 85% 88%)!important;transform:rotate(-6deg) scale(1.06)}
+.ctile[aria-pressed=true] .cico{background:hsl(var(--h,210) 62% 42%)!important;color:#fff!important}
+.ctile[aria-pressed=true]{background:hsl(var(--h,210) 90% 97%);border-color:hsl(var(--h,210) 62% 42%)}
+.cat:hover{background:var(--card)!important;border-color:hsl(var(--h,210) 50% 60%)}
+:root[data-theme=dark] .cico{background:hsl(var(--h,210) 35% 20%)!important;color:hsl(var(--h,210) 80% 72%)!important}
+:root[data-theme=dark] .ctile[aria-pressed=true]{background:hsl(var(--h,210) 30% 14%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .cico{background:hsl(var(--h,210) 35% 20%)!important;color:hsl(var(--h,210) 80% 72%)!important}}
+.cat .cico svg,.ctile .cico svg{stroke-width:2}
+/* feature/info icons cycle through a calm palette instead of all red */
+.box .ico,.fi .ico,.type .ico{--h:212;background:hsl(var(--h) 90% 94%)!important;color:hsl(var(--h) 62% 38%)!important}
+:is(.grid4,.fl,.grid2,.promo,.notices,.types)>:nth-child(6n+1) .ico{--h:212}
+:is(.grid4,.fl,.grid2,.promo,.notices,.types)>:nth-child(6n+2) .ico{--h:150}
+:is(.grid4,.fl,.grid2,.promo,.notices,.types)>:nth-child(6n+3) .ico{--h:28}
+:is(.grid4,.fl,.grid2,.promo,.notices,.types)>:nth-child(6n+4) .ico{--h:268}
+:is(.grid4,.fl,.grid2,.promo,.notices,.types)>:nth-child(6n+5) .ico{--h:190}
+:is(.grid4,.fl,.grid2,.promo,.notices,.types)>:nth-child(6n+6) .ico{--h:330}
+:root[data-theme=dark] :is(.box,.fi,.type) .ico{background:hsl(var(--h) 35% 20%)!important;color:hsl(var(--h) 80% 72%)!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) :is(.box,.fi,.type) .ico{background:hsl(var(--h) 35% 20%)!important;color:hsl(var(--h) 80% 72%)!important}}
