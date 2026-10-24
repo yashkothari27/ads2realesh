@@ -453,3 +453,29 @@ input[type=checkbox],input[type=radio]{width:18px;height:18px;accent-color:var(-
 
 .sugg{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;min-height:0}.sugg .chip{min-height:34px;font-family:Outfit,"Noto Sans Gujarati",sans-serif}
 [data-translate]{margin:10px 8px 0 0}
+
+/* ---------- booking step 1: category tiles + sub-category panel ---------- */
+.catstep{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.ctiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+.ctile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:112px;padding:14px 10px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font:600 14px/1.25 Outfit,"Noto Sans Gujarati",sans-serif;text-align:center;cursor:pointer;transition:border-color .2s,background .2s,transform .15s}
+.ctile .cico{width:48px;height:48px;border-radius:14px}.ctile .cico svg{width:26px;height:26px}
+.ctile:hover{border-color:var(--accent)}.ctile:active{transform:scale(.97)}
+.ctile[aria-pressed=true]{border:2px solid var(--accent);background:var(--accent-2)}
+.ctile[aria-pressed=true] .cico{background:var(--accent);color:var(--on-accent)}
+.cpanel{position:sticky;top:0;border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.csearch{display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line)}
+.csearch svg{color:var(--muted);flex:none}.csearch input{border:0;background:transparent;min-height:52px;padding:0;font-size:15px}
+.csearch input:focus-visible{outline:none}.csearch:focus-within{box-shadow:inset 0 -2px 0 var(--accent)}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px 10px 16px;background:var(--soft);color:var(--accent);font-weight:600}
+.plist2{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto}
+.plist2 li+li{border-top:1px solid var(--line)}
+.plist2 button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:10px 16px;border:0;background:none;color:var(--ink);font:500 15px Outfit,"Noto Sans Gujarati",sans-serif;text-align:left;cursor:pointer}
+.plist2 button small{display:block;color:var(--muted);font-weight:400;font-size:13px}
+.plist2 button svg{color:var(--accent);flex:none}
+.plist2 button:hover,.plist2 button[aria-pressed=true]{background:var(--accent-2)}
+.pempty{display:grid;justify-items:center;gap:8px;padding:40px 20px;text-align:center;color:var(--muted)}
+.pempty svg{width:40px;height:40px;color:var(--line)}
+.catpath{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:6px}
+.catpath span:nth-child(2){flex:1}
+@media (max-width:860px){.catstep{grid-template-columns:1fr}.cpanel{position:static}.cpanel.active{order:-1}.ctiles{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:420px){.ctiles{grid-template-columns:repeat(2,1fr)}.ctile{min-height:96px}}

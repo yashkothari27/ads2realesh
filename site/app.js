@@ -158,29 +158,30 @@ $("#burger").onclick = ()=>{const o=$("#menu").classList.toggle("open"); $("#bur
 $("#menu").addEventListener("click",()=>$("#menu").classList.remove("open"));
 
 /* ---------- booking flow: Newspaper -> Compose -> Dates -> Pay ---------- */
-const STEPS = ["Newspaper","Compose","Dates","Details & pay"];
+const STEPS = ["Category","Newspaper","Compose","Dates","Details & pay"];
 let S, step = 0, viewMonth;
 function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",fileKey:"",docKey:"",sub:"",child:"",kb:"en",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
 const minDate = ()=>{const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+CUTOFF_DAYS+(new Date().getHours()>=17?1:0)); return d;};
 const iso = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmt = s=>new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",weekday:"short"});
 const key = it=>it.paper+"|"+it.city;
-const saveDraft = ()=>{ if(step<4) store.set("a2r_draft",{S:{...S,file:""},step}); };
+const saveDraft = ()=>{ if(step<5) store.set("a2r_draft",{S:{...S,file:""},step}); };
 
 function validate(){
  const e = {};
- if (step===0){ if(!S.cat) e.cat="Choose a category."; else if(SUBCATS[S.cat] && !S.sub) e.sub="Choose a sub-category."; else if(CHILDCATS[S.cat+"|"+S.sub] && !S.child) e.child="Choose a sub-child category."; else if(!S.items.length) e.items="Pick a newspaper, then tick at least one edition."; }
- if (step===1){
+ if (step===0){ if(!S.cat) e.cat="Choose a category."; else if(SUBCATS[S.cat] && !S.sub) e.cat="Choose a sub-category."; else if(CHILDCATS[S.cat+"|"+S.sub] && !S.child) e.cat="Choose a sub-child category."; }
+ if (step===1 && !S.items.length) e.items="Pick a newspaper, then tick at least one edition.";
+ if (step===2){
   if (S.type==="ct"){ if(wordCount(S.text)<3) e.text="Write your ad. It needs at least a few words."; else { const r=adRules(S.cat,S.text); if(r.length) e.text=r.join(" "); } }
   else { if(!(S.w>=2&&S.w<=33)) e.w="Width must be 2 to 33 cm."; if(!(S.h>=2&&S.h<=52)) e.h="Height must be 2 to 52 cm."; if(!S.file&&wordCount(S.text)<3) e.file="Upload your artwork, or describe the ad so our desk can design it."; }
  }
- if (step===1 && S._uploading) e.doc = e.file = "Please wait for the upload to finish.";
- if (step===1 && REQUIRED_DOCS[S.cat] && !S.docKey) e.doc = `Upload the ${REQUIRED_DOCS[S.cat].toLowerCase()}. The newspaper won't print this notice without it.`;
- if (step===2 && !S.dates.length) e.dates="Pick at least one publishing date.";
- if (step===3){
+ if (step===2 && S._uploading) e.doc = e.file = "Please wait for the upload to finish.";
+ if (step===2 && REQUIRED_DOCS[S.cat] && !S.docKey) e.doc = `Upload the ${REQUIRED_DOCS[S.cat].toLowerCase()}. The newspaper won't print this notice without it.`;
+ if (step===3 && !S.dates.length) e.dates="Pick at least one publishing date.";
+ if (step===4){
   if (S.name.trim().length<2) e.name="Enter your full name.";
   if (!/^[6-9]\d{9}$/.test(S.phone)) e.phone="Enter a 10-digit Indian mobile number.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.email)) e.email="Enter a valid email address.";
+  if (!/^[^\s]+[^\s]+\.[^\s]+$/.test(S.email)) e.email="Enter a valid email address.";
   if (S.gstin && !/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(S.gstin)) e.gstin="This GSTIN format looks wrong (15 characters).";
   if (!S.terms) e.terms="Please accept the terms to continue.";
  }
@@ -199,14 +200,46 @@ function enhLabel(id, def){
 
 function stepHTML(){
  switch(step){
- case 0: { const open = P.find(x=>x.name===S._open);
+ case 0: {
+  const q = (S._q||"").trim().toLowerCase();
+  const subs = S.cat && SUBCATS[S.cat] ? SUBCATS[S.cat] : [];
+  const kids = S.cat && S.sub ? (CHILDCATS[S.cat+"|"+S.sub]||[]) : [];
+  // panel: search results across everything, else the chosen category's sub / sub-child list
+  let panel;
+  if (q) {
+   const hits = [];
+   for (const c of CATS) { if (c.toLowerCase().includes(q)) hits.push([c,"",""]);
+    for (const sb of SUBCATS[c]||[]) { if ((c+" "+sb).toLowerCase().includes(q)) hits.push([c,sb,""]);
+     for (const k of CHILDCATS[c+"|"+sb]||[]) if ((sb+" "+k).toLowerCase().includes(q) || k.toLowerCase().includes(q)) hits.push([c,sb,k]); } }
+   panel = hits.length ? `<ul class="plist2">${hits.slice(0,40).map(([c,sb,k])=>`<li><button data-path="${esc(c)}|${esc(sb)}|${esc(k)}"><span><b>${esc(k||sb||c)}</b><small>${esc([c,sb].filter(Boolean).filter(x=>x!==(k||sb||c)).join(" › "))}</small></span><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button></li>`).join("")}</ul>`
+    : `<div class="pempty"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><p>No match for "${esc(S._q)}". Try another word, or pick a category.</p></div>`;
+  } else if (S.cat && kids.length) {
+   panel = `<div class="phead"><button class="btn sm ghost" data-back-sub aria-label="Back to ${esc(S.cat)} sub-categories"><svg class="i" aria-hidden="true"><use href="#i-chevl"/></svg></button><span>${esc(S.sub)}: choose one</span></div>
+    <ul class="plist2">${kids.map(k=>`<li><button data-child="${esc(k)}" aria-pressed="${S.child===k}"><span><b>${esc(k)}</b></span><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button></li>`).join("")}</ul>`;
+  } else if (S.cat && subs.length) {
+   panel = `<div class="phead"><span>${esc(S.cat)} sub-categories</span><button class="btn sm ghost" data-clear-cat aria-label="Clear category"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <ul class="plist2">${subs.map(sb=>`<li><button data-subpick="${esc(sb)}" aria-pressed="${S.sub===sb}"><span><b>${esc(sb)}</b></span><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button></li>`).join("")}</ul>`;
+  } else if (S.cat) {
+   panel = `<div class="pempty"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><p><b>${esc(S.cat)}</b> selected. Continue to choose newspapers.</p></div>`;
+  } else {
+   panel = `<div class="pempty"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><p>Pick a category, or search for what you want to announce.</p></div>`;
+  }
+  return `<h3>What do you want to announce?</h3>
+  <p class="err" id="e-cat" role="alert"></p>
+  <div class="catstep">
+   <div class="ctiles" role="group" aria-label="Categories">${CAT_SORTED.map(c=>`<button class="ctile" data-pickcat="${esc(c)}" aria-pressed="${S.cat===c}"><span class="cico"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[c]||"i-tag"}"/></svg></span>${esc(c)}</button>`).join("")}</div>
+   <div class="cpanel${S.cat||q?" active":""}">
+    <label class="sr" for="catQ">Search sub-categories</label>
+    <div class="csearch"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="catQ" type="search" placeholder="Search: flat, driver, besnu, name change..." value="${esc(S._q||"")}" autocomplete="off"></div>
+    <div id="cpanelBody">${panel}</div>
+   </div>
+  </div>`; }
+ case 1: { const open = P.find(x=>x.name===S._open);
   const list = P.filter(x=>(!S._lang||x.lang===S._lang)&&(!S._cityF||x.cities.includes(S._cityF)));
   return `<h3>Choose newspapers and editions</h3>
   <div class="seg" role="group" aria-label="Ad format">${Object.entries(TYPES).map(([k,t])=>`<button class="segb" aria-pressed="${S.type===k}" data-set="type" data-v="${k}"><svg class="i"><use href="#${t.ico}"/></svg>${t.n}</button>`).join("")}</div>
   <div class="r3" style="margin-top:4px">
-   <div>${F("cat","Category",`<select id="cat"><option value="">Choose category</option>${CATS.map(c=>`<option ${S.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`)}
-   ${SUBCATS[S.cat]?F("sub","Sub-category",`<select id="sub"><option value="">Choose sub-category</option>${SUBCATS[S.cat].map(c=>`<option ${S.sub===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}
-   ${CHILDCATS[S.cat+"|"+S.sub]?F("child","Sub-child category",`<select id="child"><option value="">Choose sub-child category</option>${CHILDCATS[S.cat+"|"+S.sub].map(c=>`<option ${S.child===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}</div>
+   <div class="catpath" style="grid-column:1/-1"><span class="cico"><svg class="i" aria-hidden="true"><use href="#${CAT_ICON[S.cat]||"i-tag"}"/></svg></span><span><b>${esc(S.cat)}</b>${S.sub?` › ${esc(S.sub)}`:""}${S.child?` › ${esc(S.child)}`:""}</span><button class="btn sm ghost" data-go="0">Change</button></div>
    <div>${F("wLang","Language",`<select id="wLang"><option value="">All languages</option>${LANGS.map(l=>`<option ${S._lang===l?"selected":""}>${l}</option>`).join("")}</select>`)}</div>
    <div>${F("wCityF","City",`<select id="wCityF"><option value="">All cities</option>${CITIES.map(c=>`<option ${S._cityF===c?"selected":""}>${c}</option>`).join("")}</select>`)}</div>
   </div>
@@ -215,7 +248,7 @@ function stepHTML(){
   <div class="pick">${list.map(x=>{const c=S.items.filter(i=>i.paper===x.name).length; return `<button class="opt" aria-pressed="${S._open===x.name}" aria-expanded="${S._open===x.name}" data-open-paper="${esc(x.name)}"><strong>${esc(x.name)}</strong><small>${x.lang} · ${x.cities.length} edition${x.cities.length>1?"s":""} · ${rateOf(x)}</small>${c?`<small style="color:var(--accent);font-weight:600">${c} selected</small>`:""}</button>`}).join("")||`<p class="muted">No newspapers match these filters. Clear a filter to see more.</p>`}</div>
   ${open?`<div class="eds"><strong>${esc(open.name)}: tick the editions to publish in</strong><div class="checks" style="margin-top:10px">${open.cities.map(c=>`<label><input type="checkbox" data-ed="${esc(c)}" ${S.items.some(i=>i.paper===open.name&&i.city===c)?"checked":""}> ${esc(c)} <span class="muted">${rateLabel(open,c,S.type,S.cat)}</span></label>`).join("")}</div>
    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn sm" data-all="1">All editions</button><button class="btn sm ghost" data-all="0">Clear</button></div></div>`:""}`; }
- case 1: { const mn = Math.max(0,...S.items.map(it=>minWords(P.find(x=>x.name===it.paper),it.city,S.cat)));
+ case 2: { const mn = Math.max(0,...S.items.map(it=>minWords(P.find(x=>x.name===it.paper),it.city,S.cat)));
   const guide = AD_GUIDE[S.cat==="To let"?"Property":S.cat];
   const help = guide ? `<div class="rules"><strong>${esc(S.cat)} ads must follow the newspaper's format</strong><ul>${guide.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>${S.cat==="Name change"?`<button class="btn sm" data-tpl>Use name-change format</button>`:""}</div>` : "";
   const docF = REQUIRED_DOCS[S.cat] ? F("doc",`Required document: ${esc(REQUIRED_DOCS[S.cat])}`,`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="dn">${S.doc?esc(S.doc):"Upload PDF or photo (up to 10 MB)"}</span><input id="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="sr"></label>`,"Our desk checks it before sending the notice to the newspaper.") : "";
@@ -230,7 +263,7 @@ function stepHTML(){
   <div class="row2">${S.type==="da"?F("page","Page",`<select id="page">${Object.entries(PAGES).map(([k,v])=>`<option value="${k}" ${S.page===k?"selected":""}>${v}</option>`).join("")}</select>`,"Front +100%, last +50%, third +25% on most papers"):"<div></div>"}<div class="checks" style="align-self:center"><label><input type="checkbox" id="color" ${S.color?"checked":""}> Colour ad</label></div></div>
   ${F("file","Artwork (JPG, PNG or PDF, up to 10 MB)",`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="fn">${S.file?esc(S.file):"Click to upload your artwork"}</span><input id="file" type="file" accept=".jpg,.jpeg,.png,.pdf" class="sr"></label>`)}
   ${help}${docF}${kb}${F("text","Or describe the ad and our desk designs it",`<textarea id="text" maxlength="1200" placeholder="Headline, details, contact, and any logo or colours you want">${esc(S.text)}</textarea>`)}`; }
- case 2: { const m=viewMonth, md=minDate(); const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate(); const lead=(m.getDay()+6)%7;
+ case 3: { const m=viewMonth, md=minDate(); const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate(); const lead=(m.getDay()+6)%7;
   let cells=["Mo","Tu","We","Th","Fr","Sa","Su"].map(d=>`<span class="dh">${d}</span>`).join("")+"<span></span>".repeat(lead);
   for(let d=1;d<=days;d++){const dt=new Date(m.getFullYear(),m.getMonth(),d), k=iso(dt); cells+=`<button data-date="${k}" ${dt<md?"disabled":""} aria-pressed="${S.dates.includes(k)}" aria-label="${fmt(k)}">${d}</button>`;}
   const canPrev = m > new Date(md.getFullYear(),md.getMonth(),1);
@@ -238,21 +271,21 @@ function stepHTML(){
   <div class="calhd"><button class="btn sm" data-mon="-1" ${canPrev?"":"disabled"} aria-label="Previous month"><svg class="i"><use href="#i-chevl"/></svg></button><strong>${m.toLocaleDateString("en-IN",{month:"long",year:"numeric"})}</strong><button class="btn sm" data-mon="1" aria-label="Next month"><svg class="i"><use href="#i-chev"/></svg></button></div>
   <div class="cal">${cells}</div><p class="err" id="e-dates"></p>
   ${S.dates.length?`<p class="sm"><b>Selected:</b> ${[...S.dates].sort().map(fmt).join(", ")}</p>`:""}`; }
- case 3: { const q=quoteAll(S); return `<h3>Review and pay</h3>
+ case 4: { const q=quoteAll(S); return `<h3>Review and pay</h3>
   <div class="tbl"><table><tbody>
   <tr><th>Format</th><td>${TYPES[S.type].n} · ${esc(S.cat)}${S.sub?" · "+esc(S.sub):""}${S.child?" · "+esc(S.child):""}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
-  <tr><th>Editions</th><td>${S.items.map(it=>`${esc(it.paper)}, ${esc(it.city)}`).join("<br>")}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
-  <tr><th>${S.type==="ct"?"Ad text":"Size"}</th><td>${S.type==="ct"?esc(S.text):`${S.w} × ${S.h} cm${S.color?", colour":""}${S.file?"<br>"+esc(S.file):""}`}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>
-  ${S.doc?`<tr><th>Document</th><td>${esc(S.doc)}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>`:""}
-  <tr><th>Dates</th><td>${[...S.dates].sort().map(fmt).join(", ")}</td><td><button class="btn sm" data-go="2">Edit</button></td></tr>
+  <tr><th>Editions</th><td>${S.items.map(it=>`${esc(it.paper)}, ${esc(it.city)}`).join("<br>")}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>
+  <tr><th>${S.type==="ct"?"Ad text":"Size"}</th><td>${S.type==="ct"?esc(S.text):`${S.w} × ${S.h} cm${S.color?", colour":""}${S.file?"<br>"+esc(S.file):""}`}</td><td><button class="btn sm" data-go="2">Edit</button></td></tr>
+  ${S.doc?`<tr><th>Document</th><td>${esc(S.doc)}</td><td><button class="btn sm" data-go="2">Edit</button></td></tr>`:""}
+  <tr><th>Dates</th><td>${[...S.dates].sort().map(fmt).join(", ")}</td><td><button class="btn sm" data-go="3">Edit</button></td></tr>
   </tbody></table></div>
   <div class="row2">${F("name","Full name",`<input id="name" autocomplete="name" value="${esc(S.name)}">`)}${F("phone","Mobile",`<input id="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" value="${esc(S.phone)}" placeholder="10-digit mobile">`)}</div>
   ${F("email","Email for invoice and proof",`<input id="email" type="email" autocomplete="email" value="${esc(S.email)}">`)}
   ${F("gstin","GSTIN (optional, for business invoice)",`<input id="gstin" maxlength="15" style="text-transform:uppercase" value="${esc(S.gstin)}">`)}
   <label style="display:flex;gap:10px;align-items:start;margin-top:12px;font-size:14px"><input type="checkbox" id="terms" style="width:auto;min-height:auto;margin-top:4px" ${S.terms?"checked":""}> I confirm the ad content is lawful and accept the terms, refund and privacy policies.</label><p class="err" id="e-terms"></p>
   ${q.req?`<p class="muted sm">Some editions you picked don't publish an online rate. We'll send you a quote for the whole order before you pay. Nothing is charged now.</p>`:`<p class="muted sm">Total ${inr(q.total)} for ${q.n} date${q.n>1?"s":""} × ${S.items.length} edition${S.items.length>1?"s":""}. You'll pay on the secure Razorpay page with UPI, card or netbanking.</p>`}`; }
- case 4: return `<div class="done"><div class="skel" style="width:60px;height:60px;border-radius:50%;margin:0 auto 18px;background:linear-gradient(90deg,var(--soft),var(--accent-2),var(--soft));background-size:200% 100%"></div><span class="eyebrow">Hang on. Don't close this tab.</span><h3>Confirming your payment</h3><p class="muted">We're checking with the bank and reserving your space with the newspapers. This takes a few seconds.</p></div>`;
- case 5: return `<div class="done"><div class="ico"><svg class="i" style="stroke:#fff"><use href="#i-check"/></svg></div><h3>${S.quote?"Quote request received":"Booking received"}</h3><p class="muted">Your booking ID</p><p class="bid">${S.id}</p><p class="muted">We've sent the details to ${esc(S.email)}. Our desk verifies the ad and releases it to ${S.items.length>1?S.items.length+" editions":esc(S.items[0].paper)}. The e-paper clipping comes to you on each publishing date.</p><p class="hint">A confirmation email with your GST invoice follows shortly.</p></div>`;
+ case 5: return `<div class="done"><div class="skel" style="width:60px;height:60px;border-radius:50%;margin:0 auto 18px;background:linear-gradient(90deg,var(--soft),var(--accent-2),var(--soft));background-size:200% 100%"></div><span class="eyebrow">Hang on. Don't close this tab.</span><h3>Confirming your payment</h3><p class="muted">We're checking with the bank and reserving your space with the newspapers. This takes a few seconds.</p></div>`;
+ case 6: return `<div class="done"><div class="ico"><svg class="i" style="stroke:#fff"><use href="#i-check"/></svg></div><h3>${S.quote?"Quote request received":"Booking received"}</h3><p class="muted">Your booking ID</p><p class="bid">${S.id}</p><p class="muted">We've sent the details to ${esc(S.email)}. Our desk verifies the ad and releases it to ${S.items.length>1?S.items.length+" editions":esc(S.items[0].paper)}. The e-paper clipping comes to you on each publishing date.</p><p class="hint">A confirmation email with your GST invoice follows shortly.</p></div>`;
  }
 }
 function sideHTML(){
@@ -264,24 +297,24 @@ function sideHTML(){
   <div class="help"><a href="tel:+919000000000"><svg class="i"><use href="#i-phone"/></svg>Call us</a><a href="https://wa.me/919000000000"><svg class="i"><use href="#i-mail"/></svg>WhatsApp</a></div>`;
 }
 function render(){
- const fin = step>=4;
+ const fin = step>=5;
  $("#prog").innerHTML = STEPS.map((s,i)=>`<span class="${i<=step?"on":""}">${i+1}. ${s}</span>`).join("");
  $("#prog").style.display = fin?"none":"";
  const q = quoteAll(S);
- $("#selbar").innerHTML = fin?"":`<span>${S.items.length?`<b>${S.items.length}</b> edition${S.items.length>1?"s":""} selected`:"No edition selected yet"}</span><span>Total / insertion <b>${!q?"-":q.req&&!q.per?"On request":inr(q.perGst)+(q.req?" + quote":"")}</b></span>`;
+ $("#selbar").innerHTML = fin||step===0?"":`<span>${S.items.length?`<b>${S.items.length}</b> edition${S.items.length>1?"s":""} selected`:"No edition selected yet"}</span><span>Total / insertion <b>${!q?"-":q.req&&!q.per?"On request":inr(q.perGst)+(q.req?" + quote":"")}</b></span>`;
  const box=$("#stepBox"); box.classList.toggle("enter", box.dataset.step!==String(step)); box.dataset.step=step; box.innerHTML = stepHTML(); $("#side").innerHTML = sideHTML();
- $("#side").style.display = fin?"none":"";
- $(".wz-body").classList.toggle("solo",fin);
+ $("#side").style.display = fin||step===0?"none":"";
+ $(".wz-body").classList.toggle("solo",fin||step===0);
  $("#back").style.visibility = step===0||fin?"hidden":"visible";
- $("#next").style.display = step===4?"none":"";
- $("#next").innerHTML = step===3?(q.req?"Request quote":`Pay ${inr(q.total)}`):step===5?"Done":`Continue<svg class="i"><use href="#i-chev"/></svg>`;
- if (step<4) history.replaceState(null,"",`#book/step-${step+1}`);
+ $("#next").style.display = step===5?"none":"";
+ $("#next").innerHTML = step===4?(q.req?"Request quote":`Pay ${inr(q.total)}`):step===6?"Done":`Continue<svg class="i"><use href="#i-chev"/></svg>`;
+ if (step<5) history.replaceState(null,"",`#book/step-${step+1}`);
  saveDraft();
 }
 function showErrors(e){ $$(".err",$("#stepBox")).forEach(x=>x.textContent=""); $$("[aria-invalid]",$("#stepBox")).forEach(x=>x.removeAttribute("aria-invalid"));
  for (const [k,m] of Object.entries(e)){ const el=$("#e-"+k); if(el) el.textContent=m; $("#"+k)?.setAttribute("aria-invalid","true"); }
  const f = Object.keys(e)[0]; if (f) ($("#"+f)||$("#e-"+f))?.focus?.(); }
-const refreshSide = ()=>{ $("#side").innerHTML = sideHTML(); const q=quoteAll(S); if(step===3&&q) $("#next").textContent=q.req?"Request quote":`Pay ${inr(q.total)}`; };
+const refreshSide = ()=>{ $("#side").innerHTML = sideHTML(); const q=quoteAll(S); if(step===4&&q) $("#next").textContent=q.req?"Request quote":`Pay ${inr(q.total)}`; };
 
 $("#stepBox").addEventListener("click",e=>{
  const t = e.target.closest("[data-set]"); if (t){ S[t.dataset.set]=t.dataset.v; if(t.dataset.set==="type") S.enh=[]; render(); return; }
@@ -293,6 +326,13 @@ $("#stepBox").addEventListener("click",e=>{
  const d = e.target.closest("[data-date]"); if (d){ const k=d.dataset.date; S.dates = S.dates.includes(k)?S.dates.filter(x=>x!==k):[...S.dates,k]; render(); return; }
  const m = e.target.closest("[data-mon]"); if (m){ viewMonth.setMonth(viewMonth.getMonth()+ +m.dataset.mon); render(); return; }
  const g = e.target.closest("[data-go]"); if (g){ step=+g.dataset.go; render(); return; }
+ const pc = e.target.closest("[data-pickcat]"); if (pc){ const c=pc.dataset.pickcat; if (S.cat!==c){ S.cat=c; S.sub=""; S.child=""; } S._q=""; render(); if(!SUBCATS[c]) setTimeout(()=>go(1),150); else $(".cpanel")?.scrollIntoView({block:"nearest",behavior:"smooth"}); return; }
+ const sp = e.target.closest("[data-subpick]"); if (sp){ S.sub=sp.dataset.subpick; S.child=""; render(); if(!CHILDCATS[S.cat+"|"+S.sub]) setTimeout(()=>go(1),150); return; }
+ const ch = e.target.closest("[data-child]"); if (ch){ S.child=ch.dataset.child; render(); setTimeout(()=>go(1),150); return; }
+ const pa = e.target.closest("[data-path]"); if (pa){ const [c,sb,k]=pa.dataset.path.split("|"); S.cat=c; S.sub=sb; S.child=k; S._q=""; render();
+  if ((!SUBCATS[c]||sb) && (!CHILDCATS[c+"|"+sb]||k)) setTimeout(()=>go(1),150); return; }
+ if (e.target.closest("[data-back-sub]")){ S.sub=""; S.child=""; render(); return; }
+ if (e.target.closest("[data-clear-cat]")){ S.cat=""; S.sub=""; S.child=""; render(); return; }
  const sg = e.target.closest("[data-sg]"); if (sg){ swapWord(+sg.dataset.at, sg.dataset.cur, sg.dataset.sg); return; }
  if (e.target.closest("[data-translate]")){ translateAd(); return; }
  const kbb = e.target.closest("[data-kb]"); if (kbb){ S.kb=kbb.dataset.kb; render(); $("#text")?.focus(); return; }
@@ -301,6 +341,7 @@ $("#stepBox").addEventListener("click",e=>{
 $("#stepBox").addEventListener("input",e=>{
  const t=e.target, id=t.id;
  if (id) { const er=$("#e-"+id); if (er && er.textContent) { er.textContent=""; t.removeAttribute("aria-invalid"); } }
+ if (id==="catQ"){ S._q=t.value; const tmp=document.createElement("div"); tmp.innerHTML=stepHTML(); $("#cpanelBody").innerHTML=tmp.querySelector("#cpanelBody").innerHTML; return; }
  if (id==="wLang"){S._lang=t.value; render(); return;} if (id==="wCityF"){S._cityF=t.value; render(); return;}
  if (id==="cat"){S.cat=t.value; S.sub=""; S.child=""; render(); return;}
  if (id==="sub"){S.sub=t.value; S.child=""; render(); return;}
@@ -325,14 +366,14 @@ $("#stepBox").addEventListener("input",e=>{
 });
 async function go(dir){
  if (dir>0){ const e=validate(); if(Object.keys(e).length) return showErrors(e); }
- if (step===5){ closeWizard(); return; }
- if (step===3 && dir>0){
-  step=4; render(); history.replaceState(null,"","#book/processing");
+ if (step===6){ closeWizard(); return; }
+ if (step===4 && dir>0){
+  step=5; render(); history.replaceState(null,"","#book/processing");
   try { const id = await pay(); finishBooking(id); }
-  catch (err) { step=3; render(); $("#e-terms").textContent = err.message || "Payment didn't go through. You haven't been charged. Try again."; }
+  catch (err) { step=4; render(); $("#e-terms").textContent = err.message || "Payment didn't go through. You haven't been charged. Try again."; }
   return;
  }
- step = Math.max(0,Math.min(3,step+dir)); render(); $(".wz-body").scrollTop=0;
+ step = Math.max(0,Math.min(4,step+dir)); render(); $(".wz-body").scrollTop=0;
 }
 
 /* ---------- payment: server creates the Razorpay order and verifies the signature ---------- */
@@ -360,7 +401,7 @@ function localDemo(){
 function finishBooking(id){
  S.id=id; try{localStorage.removeItem("a2r_draft")}catch{}
  { const all=store.get("a2r_bookings",{}), q=quoteAll(S); all[id]={items:S.items,dates:S.dates,total:q.total,status:S.quote?"QUOTE":"PAID",email:S.email}; store.set("a2r_bookings",all); }
- step=5; render(); history.replaceState(null,"","#book/confirmed");
+ step=6; render(); history.replaceState(null,"","#book/confirmed");
 }
 
 /* ---------- uploads: server signs a slot, the file goes straight to storage (Google Cloud Storage in production) ---------- */
@@ -440,8 +481,8 @@ function toGujarati(word){
 }
 function closeWizard(){ $("#wiz").close(); }
 $("#wiz").addEventListener("close",()=>history.replaceState(null,"",location.pathname+location.search));
-$("#wiz").addEventListener("cancel",e=>{ if(step===4) e.preventDefault(); });
-$("#next").onclick=()=>go(1); $("#back").onclick=()=>go(-1); $("#wzClose").onclick=()=>{ if(step!==4) closeWizard(); };
+$("#wiz").addEventListener("cancel",e=>{ if(step===5) e.preventDefault(); });
+$("#next").onclick=()=>go(1); $("#back").onclick=()=>go(-1); $("#wzClose").onclick=()=>{ if(step!==5) closeWizard(); };
 
 function openWizardAt(pre={}){
  const it = pre.paper && pre.city ? [{paper:pre.paper,city:pre.city}] : [];
@@ -473,7 +514,7 @@ if (location.hash.startsWith("#book")){
  const d = store.get("a2r_draft",null);
  S = fresh(d?.S||{}); viewMonth=minDate(); viewMonth.setDate(1);
  S.dates = S.dates.filter(k=>new Date(k+"T00:00")>=minDate());
- const want = Math.min(3, (+(location.hash.match(/step-(\d)/)||[])[1]||1)-1);
+ const want = Math.min(4, (+(location.hash.match(/step-(\d)/)||[])[1]||1)-1);
  step = 0; while(step<want && !Object.keys(validate()).length) step++;
  render(); $("#wiz").showModal();
 }
