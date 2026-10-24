@@ -4,6 +4,8 @@
 // Uploads (documents, artwork) go to Google Cloud Storage when GCS_BUCKET and a service account are set:
 //   GCS_BUCKET=ad2release-uploads GCS_CLIENT_EMAIL=...@....iam.gserviceaccount.com GCS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
 //   (or GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json). Without them, uploads are saved to data/uploads.
+// Gujarati typing uses Google Input Tools (no key). "Translate to Gujarati" uses Google Cloud Translation:
+//   GOOGLE_TRANSLATE_API_KEY=... (an API key restricted to the Cloud Translation API).
 const http = require("node:http"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
 const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules, REQUIRED_DOCS, SUBCATS, CHILDCATS } = require("./site/pricing.js");
 
@@ -97,7 +99,33 @@ function markPaid(db, id, paymentId, via) {
   return true;
 }
 
+/* ---------- Gujarati: Google transliteration (typing) and Cloud Translation (whole ad) ---------- */
+const TRANSLATE_KEY = process.env.GOOGLE_TRANSLATE_API_KEY || "";
+const tcache = new Map(); // ponytail: in-memory cache of word suggestions; fine for one process
+async function transliterate({ word }) {
+  const w = String(word || "").trim();
+  if (!/^[A-Za-z]{1,40}$/.test(w)) throw Object.assign(new Error("Send one English-letter word."), { status: 400 });
+  if (tcache.has(w)) return { word: w, options: tcache.get(w) };
+  const r = await fetch(`https://inputtools.google.com/request?text=${encodeURIComponent(w)}&itc=gu-t-i0-und&num=5&cp=0&cs=1&ie=utf-8&oe=utf-8&app=ad2release`, { signal: AbortSignal.timeout(4000) });
+  const j = await r.json();
+  const options = j[0] === "SUCCESS" && j[1]?.[0]?.[1] ? j[1][0][1].slice(0, 5) : [];
+  if (tcache.size > 5000) tcache.clear(); tcache.set(w, options);
+  return { word: w, options };
+}
+async function translate({ text }) {
+  if (!TRANSLATE_KEY) throw Object.assign(new Error("Translation isn't set up yet. Type in Gujarati, or our desk translates it for free."), { status: 503 });
+  const q = String(text || "").slice(0, 1200).trim();
+  if (!q) throw Object.assign(new Error("Write the ad in English first."), { status: 400 });
+  const r = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(TRANSLATE_KEY)}`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q, source: "en", target: "gu", format: "text" }), signal: AbortSignal.timeout(8000) });
+  const j = await r.json();
+  if (!r.ok) throw Object.assign(new Error("Translation failed. Please try again."), { status: 502 });
+  return { text: j.data.translations[0].translatedText };
+}
+
 const routes = {
+  "POST /api/transliterate": transliterate,
+  "POST /api/translate": translate,
   "POST /api/upload-url": async body => uploadSlot(body || {}),
   "POST /api/order": async body => {
     const booking = checkBooking(body), db = load(), id = newId(db);

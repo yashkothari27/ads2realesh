@@ -450,3 +450,6 @@ input[type=checkbox],input[type=radio]{width:18px;height:18px;accent-color:var(-
 
 .kbsw{margin:12px 0 0}
 #text:lang(gu),#text{font-family:Outfit,"Noto Sans Gujarati",system-ui,sans-serif}
+
+.sugg{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;min-height:0}.sugg .chip{min-height:34px;font-family:Outfit,"Noto Sans Gujarati",sans-serif}
+[data-translate]{margin:10px 8px 0 0}

@@ -31,3 +31,13 @@ The server only signs the link (PDF, JPG or PNG, up to 10 MB) and stores the fil
 
 Without these settings, uploads are saved to `data/uploads/` (fine for testing on your own computer).
 Booking desk: each booking in `data/bookings.json` has `docKey` / `fileKey` = the object path in the bucket.
+
+## Gujarati typing and translation
+- **Typing (ગુજરાતી mode):** each word typed in English letters is replaced with Google's Gujarati spelling
+  (Google Input Tools, no key needed), with up to 5 alternative spellings to tap. Falls back to the built-in
+  converter if Google can't be reached.
+- **"Translate English text to Gujarati":** uses Google Cloud Translation on your Google Cloud project.
+  1. In Google Cloud console, enable **Cloud Translation API**.
+  2. APIs & Services → Credentials → Create credentials → **API key**; restrict it to *Cloud Translation API*.
+  3. Start the server with `GOOGLE_TRANSLATE_API_KEY=... node server.js`.
+  The key stays on the server; the browser only talks to `/api/translate`.

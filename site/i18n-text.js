@@ -427,6 +427,13 @@ window.A2R_T = {
 "International":["अंतरराष्ट्रीय", "આંતરરાષ્ટ્રીય"],
 "Pilgrimage":["तीर्थ यात्रा", "તીર્થયાત્રા"],
 "Choose a sub-child category.":["उप-उप श्रेणी चुनें।","પેટા-પેટા કેટેગરી પસંદ કરો."],
+"Translate English text to Gujarati":["अंग्रेज़ी टेक्स्ट का गुजराती में अनुवाद करें", "અંગ્રેજી લખાણનો ગુજરાતીમાં અનુવાદ કરો"],
+"Translating...":["अनुवाद हो रहा है...", "અનુવાદ થઈ રહ્યો છે..."],
+"Write the ad in English first.":["पहले अंग्रेज़ी में विज्ञापन लिखें।", "પહેલાં અંગ્રેજીમાં જાહેરાત લખો."],
+"Undo":["वापस लें", "પાછું લો"],
+"Translated by Google. Please check names and numbers.":["Google द्वारा अनुवादित। कृपया नाम और नंबर जाँच लें।", "Google દ્વારા અનુવાદિત. કૃપા કરીને નામ અને નંબર ચકાસી લો."],
+"Translation isn't set up yet. Type in Gujarati, or our desk translates it for free.":["अनुवाद अभी चालू नहीं है। गुजराती में टाइप करें, या हमारा डेस्क मुफ़्त अनुवाद करेगा।", "અનુવાદ હજી ચાલુ નથી. ગુજરાતીમાં ટાઇપ કરો, અથવા અમારું ડેસ્ક મફત અનુવાદ કરશે."],
+"Type in English letters and each word changes to Gujarati, the way Google's Gujarati keyboard does: makan → મકાન, lagna → લગ્ન, sampark → સંપર્ક. Tap a suggestion to pick another spelling. You can also paste Gujarati from your phone keyboard.":["अंग्रेज़ी अक्षरों में टाइप करें, हर शब्द Google के गुजराती कीबोर्ड की तरह गुजराती में बदल जाएगा: makan → મકાન, lagna → લગ્ન, sampark → સંપર્ક। दूसरी वर्तनी के लिए सुझाव पर टैप करें। आप फ़ोन के गुजराती कीबोर्ड से पेस्ट भी कर सकते हैं।", "અંગ્રેજી અક્ષરોમાં ટાઇપ કરો, દરેક શબ્દ Googleના ગુજરાતી કીબોર્ડની જેમ ગુજરાતીમાં બદલાઈ જશે: makan → મકાન, lagna → લગ્ન, sampark → સંપર્ક. બીજી જોડણી માટે સૂચન પર ટૅપ કરો. તમે ફોનના ગુજરાતી કીબોર્ડથી પેસ્ટ પણ કરી શકો છો."],
 // placeholders
 "e.g. A2R-48213":["जैसे A2R-48213","દા.ત. A2R-48213"],"10-digit mobile":["10 अंकों का मोबाइल","10 અંકનો મોબાઇલ"],
 "Headline, details, contact, and any logo or colours you want":["शीर्षक, विवरण, संपर्क, और कोई लोगो या रंग जो आप चाहें","મથાળું, વિગતો, સંપર્ક, અને કોઈ લોગો કે રંગ જે તમે ઇચ્છો"],

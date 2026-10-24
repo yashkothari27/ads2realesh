@@ -219,7 +219,8 @@ function stepHTML(){
   const guide = AD_GUIDE[S.cat==="To let"?"Property":S.cat];
   const help = guide ? `<div class="rules"><strong>${esc(S.cat)} ads must follow the newspaper's format</strong><ul>${guide.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>${S.cat==="Name change"?`<button class="btn sm" data-tpl>Use name-change format</button>`:""}</div>` : "";
   const docF = REQUIRED_DOCS[S.cat] ? F("doc",`Required document: ${esc(REQUIRED_DOCS[S.cat])}`,`<label class="drop" style="display:block;cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><br><span id="dn">${S.doc?esc(S.doc):"Upload PDF or photo (up to 10 MB)"}</span><input id="doc" type="file" accept=".pdf,.jpg,.jpeg,.png" class="sr"></label>`,"Our desk checks it before sending the notice to the newspaper.") : "";
-  const kb = `<div class="seg kbsw" role="group" aria-label="Typing language"><button class="segb" data-kb="en" aria-pressed="${S.kb!=="gu"}">English</button><button class="segb" data-kb="gu" aria-pressed="${S.kb==="gu"}" lang="gu">ગુજરાતી</button></div>${S.kb==="gu"?`<p class="hint">Type in English letters and each word changes to Gujarati: makaan → મકાન, aapano → આપનો, bhaaDe → ભાડે, sampark → સંપર્ક. Use aa/ee/oo for long vowels and capital T, D, N for ટ, ડ, ણ. You can also paste Gujarati from your phone keyboard.</p>`:""}`;
+  const kb = `<div class="seg kbsw" role="group" aria-label="Typing language"><button class="segb" data-kb="en" aria-pressed="${S.kb!=="gu"}">English</button><button class="segb" data-kb="gu" aria-pressed="${S.kb==="gu"}" lang="gu">ગુજરાતી</button></div><button class="btn sm ghost" data-translate type="button">Translate English text to Gujarati</button><span class="hint" id="trMsg" role="status"></span>
+  ${S.kb==="gu"?`<div class="sugg" id="sugg" aria-label="Spelling suggestions"></div><p class="hint">Type in English letters and each word changes to Gujarati, the way Google's Gujarati keyboard does: makan → મકાન, lagna → લગ્ન, sampark → સંપર્ક. Tap a suggestion to pick another spelling. You can also paste Gujarati from your phone keyboard.</p>`:""}`;
   if (S.type==="ct") return `<h3>Write your ad</h3>${help}${docF}${kb}
   ${F("text","Ad text",`<textarea id="text" maxlength="800" placeholder="e.g. FOR RENT 2BHK flat, Satellite, near BRTS, semi-furnished. Call 98xxxxxxxx">${esc(S.text)}</textarea>`,`<span id="wc">${wordCount(S.text)}</span> words. Your papers charge a minimum of ${mn} words. Phone numbers count as one word. Need help writing it? Our desk drafts and translates for free.`)}
   <label class="f">Enhancements</label><div class="checks">${ENH.map(([k,n,pc])=>`<label><input type="checkbox" data-enh="${k}" ${S.enh.includes(k)?"checked":""}> ${n} <span class="muted">${enhLabel(k,pc)}</span></label>`).join("")}</div>
@@ -292,6 +293,8 @@ $("#stepBox").addEventListener("click",e=>{
  const d = e.target.closest("[data-date]"); if (d){ const k=d.dataset.date; S.dates = S.dates.includes(k)?S.dates.filter(x=>x!==k):[...S.dates,k]; render(); return; }
  const m = e.target.closest("[data-mon]"); if (m){ viewMonth.setMonth(viewMonth.getMonth()+ +m.dataset.mon); render(); return; }
  const g = e.target.closest("[data-go]"); if (g){ step=+g.dataset.go; render(); return; }
+ const sg = e.target.closest("[data-sg]"); if (sg){ swapWord(+sg.dataset.at, sg.dataset.cur, sg.dataset.sg); return; }
+ if (e.target.closest("[data-translate]")){ translateAd(); return; }
  const kbb = e.target.closest("[data-kb]"); if (kbb){ S.kb=kbb.dataset.kb; render(); $("#text")?.focus(); return; }
  if (e.target.closest("[data-tpl]")){ S.text = NAME_CHANGE_TEMPLATE; render(); const t=$("#text"); t.focus(); t.setSelectionRange(t.value.indexOf("["), t.value.indexOf("]")+1); }
 });
@@ -305,7 +308,7 @@ $("#stepBox").addEventListener("input",e=>{
  if (t.dataset.ed){ const it={paper:S._open,city:t.dataset.ed}; S.items = t.checked?[...S.items,it]:S.items.filter(i=>key(i)!==key(it)); render(); return; }
  if (id==="text" && S.kb==="gu" && /[\s.,;:!?)\-\/]$/.test(t.value.slice(0, t.selectionStart))){
   const pos=t.selectionStart, before=t.value.slice(0,pos), m=before.match(/([A-Za-z]+)([\s.,;:!?)\-\/])$/);
-  if (m){ const g=toGujarati(m[1]); const nb=before.slice(0,before.length-m[0].length)+g+m[2]; t.value=nb+t.value.slice(pos); t.setSelectionRange(nb.length,nb.length); }
+  if (m){ const g=toGujarati(m[1]), start=before.length-m[0].length; const nb=before.slice(0,start)+g+m[2]; t.value=nb+t.value.slice(pos); t.setSelectionRange(nb.length,nb.length); googleWord(t, m[1], g, start); }
  }
  if (id==="text"){ S.text=t.value; const pv=$("#pv"); if(pv){ pv.textContent=(S.enh.includes("tick")?"✓ ":"")+(S.text||"Start typing to see your ad as it will print."); pv.classList.toggle("empty",!S.text);} if($("#wc")) $("#wc").textContent=wordCount(S.text); }
  if (t.dataset.enh){ S.enh = t.checked?[...S.enh,t.dataset.enh]:S.enh.filter(x=>x!==t.dataset.enh); render(); return; }
@@ -379,6 +382,43 @@ async function upload(input, field, labelId, emptyText){
  } catch (x) { err.textContent = (x && x.message && !/fetch|network/i.test(x.message)) ? x.message : "Upload didn't go through. Check your connection and try again."; input.value=""; lbl.textContent = emptyText; }
  finally { S._uploading--; refreshSide(); saveDraft(); }
 }
+
+
+/* ---------- Google: word spelling while typing, and whole-ad translation (both proxied by server.js) ---------- */
+// put Google's best spelling in place of the quick local guess, and offer the alternatives as chips
+async function googleWord(t, latin, guess, at){
+ if (location.protocol==="file:") return;
+ try {
+  const { options } = await api("/api/transliterate", { word: latin });
+  if (!options || !options.length) return;
+  if (t.value.slice(at, at+guess.length) === guess && options[0] !== guess) {
+   const caret = t.selectionStart, d = options[0].length - guess.length;
+   t.value = t.value.slice(0,at) + options[0] + t.value.slice(at+guess.length);
+   t.setSelectionRange(caret + (caret > at ? d : 0), caret + (caret > at ? d : 0));
+   t.dispatchEvent(new Event("input",{bubbles:true}));
+  }
+  const box = $("#sugg"); if (box) box.innerHTML = options.map(o=>`<button type="button" class="chip" data-sg="${esc(o)}" data-at="${at}" data-cur="${esc(options[0])}" lang="gu">${esc(o)}</button>`).join("");
+ } catch { /* keep the local spelling */ }
+}
+function swapWord(at, cur, pick){
+ const t=$("#text"); if (!t || t.value.slice(at, at+cur.length) !== cur) return;
+ t.value = t.value.slice(0,at) + pick + t.value.slice(at+cur.length);
+ t.dispatchEvent(new Event("input",{bubbles:true}));
+ $$("#sugg [data-sg]").forEach(b=>{ b.dataset.cur = pick; b.setAttribute("aria-pressed", b.dataset.sg===pick); });
+ t.focus();
+}
+let lastEnglish = "";
+async function translateAd(){
+ const t=$("#text"), msg=$("#trMsg"); if (!t) return;
+ if (!/[A-Za-z]/.test(t.value)) { msg.textContent = "Write the ad in English first."; return; }
+ msg.textContent = "Translating...";
+ try {
+  const { text } = await api("/api/translate", { text: t.value });
+  lastEnglish = t.value; t.value = text; t.dispatchEvent(new Event("input",{bubbles:true}));
+  msg.innerHTML = `Translated by Google. Please check names and numbers. <button type="button" class="btn sm ghost" data-undo-tr>Undo</button>`;
+ } catch (x) { msg.textContent = x.message || "Translation failed. Please try again."; }
+}
+document.addEventListener("click", e => { if (e.target.closest("[data-undo-tr]") && lastEnglish) { const t=$("#text"); t.value=lastEnglish; lastEnglish=""; t.dispatchEvent(new Event("input",{bubbles:true})); $("#trMsg").textContent=""; } });
 
 /* ---------- phonetic English → Gujarati (no keyboard setup needed) ---------- */
 // ponytail: simple phonetic scheme (like most Gujarati typing tools); upgrade to a dictionary-backed IME if customers need exact spellings
