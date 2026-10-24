@@ -267,6 +267,23 @@ const SUBCATS = {
  "Astrology": ["Astrology","Vastu"],
  "Personal and greetings": ["Birthday","Anniversary","Congratulations"],
 };
+// sub-child categories (optional third level), keyed "Category|Sub-category"
+const PROP_KINDS = ["Flat","Bungalow","Tenement","Row house","Penthouse","Shop","Office","Showroom","Plot","Agricultural land"];
+const COMMUNITIES = ["Patel","Brahmin","Jain / Vania","Lohana","Rajput","Prajapati","Other communities","Caste no bar"];
+const GENDER = ["Male","Female","Male or female"];
+const CHILDCATS = {
+ "Property|For sale": PROP_KINDS, "Property|For rent": PROP_KINDS, "Property|Required on rent": PROP_KINDS, "Property|Required on sale": PROP_KINDS,
+ "Property|Commercial property": ["Shop","Office","Showroom","Godown / warehouse","Industrial shed"],
+ "Property|Plot / land": ["Residential plot","Commercial plot","Agricultural land","Industrial plot"],
+ "To let|Residential": ["Flat","Bungalow","Tenement","Room"], "To let|Commercial": ["Shop","Office","Showroom","Godown / warehouse"],
+ "Matrimonial|Brides wanted": COMMUNITIES, "Matrimonial|Grooms wanted": COMMUNITIES,
+ "Matrimonial|Patel": ["Brides wanted","Grooms wanted"], "Matrimonial|Brahmin": ["Brides wanted","Grooms wanted"], "Matrimonial|Jain / Vania": ["Brides wanted","Grooms wanted"],
+ "Matrimonial|Other communities": ["Brides wanted","Grooms wanted"], "Matrimonial|Second marriage": ["Brides wanted","Grooms wanted"], "Matrimonial|NRI": ["Brides wanted","Grooms wanted"],
+ "Recruitment|Situation vacant": GENDER, "Recruitment|Walk-in interview": GENDER, "Recruitment|Part-time / work from home": GENDER, "Recruitment|Teachers and education jobs": GENDER, "Recruitment|Drivers and security": GENDER,
+ "Vehicles|Cars for sale": ["New","Used"], "Vehicles|Two-wheelers": ["New","Used"], "Vehicles|Commercial vehicles": ["New","Used"],
+ "Education|Admissions": ["School","College","Professional courses"], "Education|Coaching and tuition": ["School tuition","Competitive exams","Languages and skills"],
+ "Travel|Tour packages": ["Domestic","International","Pilgrimage"],
+};
 const REQUIRED_DOCS = {
  "Title clear notice": "Advocate's letterhead with signature and stamp",
  "Court notice": "Court order",
@@ -343,4 +360,4 @@ console.assert(quote({paper:"Times of India",city:"Mumbai",cat:"Property",type:"
 console.assert(Math.round(quote({paper:"Gujarat Samachar",city:"Ahmedabad",cat:"Business",type:"da",w:3.9,h:10,dates:[1]}).sub)===27600, "GS 10 col-cm × ₹2760");
 console.assert(quote({paper:"Navgujarat Samay",city:"Ahmedabad",cat:"Property",type:"ct",text:"w",dates:[1]})===null, "no card = on request");
 
-if (typeof module!=="undefined") module.exports = {SUBCATS,REQUIRED_DOCS,adRules,AD_GUIDE,NAME_CHANGE_TEMPLATE,LANGS,GUJARAT,CITIES_ORDER,P,CATS,TYPES,PAGES,ENH,CUTOFF_DAYS,GST,inr,quote,quoteAll,wordCount,clsRule,minWords,boxRate,rateLabel,fromLabel};
+if (typeof module!=="undefined") module.exports = {CHILDCATS,SUBCATS,REQUIRED_DOCS,adRules,AD_GUIDE,NAME_CHANGE_TEMPLATE,LANGS,GUJARAT,CITIES_ORDER,P,CATS,TYPES,PAGES,ENH,CUTOFF_DAYS,GST,inr,quote,quoteAll,wordCount,clsRule,minWords,boxRate,rateLabel,fromLabel};

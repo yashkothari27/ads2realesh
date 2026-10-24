@@ -160,7 +160,7 @@ $("#menu").addEventListener("click",()=>$("#menu").classList.remove("open"));
 /* ---------- booking flow: Newspaper -> Compose -> Dates -> Pay ---------- */
 const STEPS = ["Newspaper","Compose","Dates","Details & pay"];
 let S, step = 0, viewMonth;
-function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",fileKey:"",docKey:"",sub:"",kb:"en",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
+function fresh(pre={}){ return Object.assign({type:"ct",cat:"",items:[],dates:[],text:"",enh:[],w:4,h:5,color:false,page:"inside",file:"",doc:"",fileKey:"",docKey:"",sub:"",child:"",kb:"en",name:"",phone:"",email:"",gstin:"",terms:false,id:"",_lang:"",_cityF:"",_open:""}, pre); }
 const minDate = ()=>{const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+CUTOFF_DAYS+(new Date().getHours()>=17?1:0)); return d;};
 const iso = d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fmt = s=>new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",weekday:"short"});
@@ -205,7 +205,8 @@ function stepHTML(){
   <div class="seg" role="group" aria-label="Ad format">${Object.entries(TYPES).map(([k,t])=>`<button class="segb" aria-pressed="${S.type===k}" data-set="type" data-v="${k}"><svg class="i"><use href="#${t.ico}"/></svg>${t.n}</button>`).join("")}</div>
   <div class="r3" style="margin-top:4px">
    <div>${F("cat","Category",`<select id="cat"><option value="">Choose category</option>${CATS.map(c=>`<option ${S.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`)}
-   ${SUBCATS[S.cat]?F("sub","Sub-category",`<select id="sub"><option value="">Choose sub-category</option>${SUBCATS[S.cat].map(c=>`<option ${S.sub===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}</div>
+   ${SUBCATS[S.cat]?F("sub","Sub-category",`<select id="sub"><option value="">Choose sub-category</option>${SUBCATS[S.cat].map(c=>`<option ${S.sub===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}
+   ${CHILDCATS[S.cat+"|"+S.sub]?F("child","Sub-child category (optional)",`<select id="child"><option value="">Choose sub-child category</option>${CHILDCATS[S.cat+"|"+S.sub].map(c=>`<option ${S.child===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`):""}</div>
    <div>${F("wLang","Language",`<select id="wLang"><option value="">All languages</option>${LANGS.map(l=>`<option ${S._lang===l?"selected":""}>${l}</option>`).join("")}</select>`)}</div>
    <div>${F("wCityF","City",`<select id="wCityF"><option value="">All cities</option>${CITIES.map(c=>`<option ${S._cityF===c?"selected":""}>${c}</option>`).join("")}</select>`)}</div>
   </div>
@@ -238,7 +239,7 @@ function stepHTML(){
   ${S.dates.length?`<p class="sm"><b>Selected:</b> ${[...S.dates].sort().map(fmt).join(", ")}</p>`:""}`; }
  case 3: { const q=quoteAll(S); return `<h3>Review and pay</h3>
   <div class="tbl"><table><tbody>
-  <tr><th>Format</th><td>${TYPES[S.type].n} · ${esc(S.cat)}${S.sub?" · "+esc(S.sub):""}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
+  <tr><th>Format</th><td>${TYPES[S.type].n} · ${esc(S.cat)}${S.sub?" · "+esc(S.sub):""}${S.child?" · "+esc(S.child):""}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
   <tr><th>Editions</th><td>${S.items.map(it=>`${esc(it.paper)}, ${esc(it.city)}`).join("<br>")}</td><td><button class="btn sm" data-go="0">Edit</button></td></tr>
   <tr><th>${S.type==="ct"?"Ad text":"Size"}</th><td>${S.type==="ct"?esc(S.text):`${S.w} × ${S.h} cm${S.color?", colour":""}${S.file?"<br>"+esc(S.file):""}`}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>
   ${S.doc?`<tr><th>Document</th><td>${esc(S.doc)}</td><td><button class="btn sm" data-go="1">Edit</button></td></tr>`:""}
@@ -298,8 +299,9 @@ $("#stepBox").addEventListener("input",e=>{
  const t=e.target, id=t.id;
  if (id) { const er=$("#e-"+id); if (er && er.textContent) { er.textContent=""; t.removeAttribute("aria-invalid"); } }
  if (id==="wLang"){S._lang=t.value; render(); return;} if (id==="wCityF"){S._cityF=t.value; render(); return;}
- if (id==="cat"){S.cat=t.value; S.sub=""; render(); return;}
- if (id==="sub"){S.sub=t.value; refreshSide(); saveDraft(); return;}
+ if (id==="cat"){S.cat=t.value; S.sub=""; S.child=""; render(); return;}
+ if (id==="sub"){S.sub=t.value; S.child=""; render(); return;}
+ if (id==="child"){S.child=t.value; saveDraft(); return;}
  if (t.dataset.ed){ const it={paper:S._open,city:t.dataset.ed}; S.items = t.checked?[...S.items,it]:S.items.filter(i=>key(i)!==key(it)); render(); return; }
  if (id==="text" && S.kb==="gu" && /[\s.,;:!?)\-\/]$/.test(t.value.slice(0, t.selectionStart))){
   const pos=t.selectionStart, before=t.value.slice(0,pos), m=before.match(/([A-Za-z]+)([\s.,;:!?)\-\/])$/);

@@ -5,7 +5,7 @@
 //   GCS_BUCKET=ad2release-uploads GCS_CLIENT_EMAIL=...@....iam.gserviceaccount.com GCS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
 //   (or GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json). Without them, uploads are saved to data/uploads.
 const http = require("node:http"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
-const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules, REQUIRED_DOCS, SUBCATS } = require("./site/pricing.js");
+const { P, CATS, TYPES, PAGES, CUTOFF_DAYS, quoteAll, wordCount, adRules, REQUIRED_DOCS, SUBCATS, CHILDCATS } = require("./site/pricing.js");
 
 const PORT = +process.env.PORT || 3000;
 const KEY_ID = process.env.RAZORPAY_KEY_ID || "", KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "", HOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
@@ -69,7 +69,7 @@ function checkBooking(b) {
   if (String(b.name || "").trim().length < 2) err("Name is required.");
   if (!/^[6-9]\d{9}$/.test(b.phone)) err("Invalid mobile number.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) err("Invalid email.");
-  const clean = { type: b.type, cat: b.cat, sub: SUBCATS[b.cat] ? b.sub : "", items: b.items.map(({ paper, city }) => ({ paper, city })), dates: [...new Set(b.dates)].sort(), text,
+  const clean = { type: b.type, cat: b.cat, sub: SUBCATS[b.cat] ? b.sub : "", child: (CHILDCATS[b.cat + "|" + b.sub] || []).includes(b.child) ? b.child : "", items: b.items.map(({ paper, city }) => ({ paper, city })), dates: [...new Set(b.dates)].sort(), text,
     enh: (Array.isArray(b.enh) ? b.enh : []).filter(x => ["bold", "tick", "bg", "web", "border"].includes(x)), w, h, color: !!b.color, page: PAGES[b.page] ? b.page : "inside", file: String(b.file || "").slice(0, 200), doc: String(b.doc || "").slice(0, 200),
     fileKey: KEY_RE.test(b.fileKey || "") ? b.fileKey : "", docKey: KEY_RE.test(b.docKey || "") ? b.docKey : "",
     name: String(b.name).trim().slice(0, 100), phone: b.phone, email: String(b.email).slice(0, 200), gstin: String(b.gstin || "").slice(0, 15) };
